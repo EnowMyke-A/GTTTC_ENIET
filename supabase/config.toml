@@ -1,0 +1,49 @@
+project_id = "ocotqusxjvnijbmjloaf"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+port = 54325
+
+[auth]
+enabled = true
+port = 54326
+
+[edge_runtime]
+enabled = true
+port = 54327
+
+[functions.create-lecturer-account]
+verify_jwt = false
+
+[functions.get-student-course-marks]
+verify_jwt = false
+
+[functions.get-student-marks]
+verify_jwt = false
+
+[functions.get-student-average]
+verify_jwt = false
+
+[functions.get-student-position]
+verify_jwt = false
+
+[functions.generate-report-cards]
+verify_jwt = false

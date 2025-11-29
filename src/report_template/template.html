@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <title>Report Card</title>
+    <style>
+        /* Base styles for both screen and print */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            color: #000;
+            font-size: 12px;
+        }
+
+        .report-card {
+            width: 100%;
+            max-width: 850px;
+            margin: auto;
+            padding: 20px 30px;
+            border: 2px solid #0000008f;
+        }
+
+        /* HEADER */
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: nowrap;
+            align-items: center;
+        }
+
+        /* Ensure the individual header sections are sized correctly for the layout */
+        .english-header,
+        .french-header {
+            width: 300px;
+        }
+
+        .header img {
+            display: block;
+            margin: 0 auto 8px auto;
+            width: 110px;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            margin: 0;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .header h2 {
+            font-size: 12px;
+            margin: 3px 0;
+            font-weight: normal;
+        }
+
+        .term-title {
+            text-align: center;
+            font-weight: bold;
+            margin: 12px 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            text-decoration: underline;
+        }
+
+        /* STUDENT INFO */
+        .student-box {
+            padding: 20px 0 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-direction: row-reverse;
+        }
+
+        .student-details {
+            width: 80%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 15px;
+        }
+
+        .student-photo {
+            width: 15%;
+            text-align: center;
+            font-size: 12px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+
+        /* GENERAL TABLE */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #0000008f;
+            padding: 6px;
+            text-align: center;
+        }
+
+        th {
+            background: #f0f0f0;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .three-column-joint table tr {
+            border: none !important;
+        }
+
+        /* FOOTER */
+        .footer {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            gap: 20px;
+        }
+
+        .footer div {
+            border-top: 1px solid #000;
+            padding-top: 25px;
+        }
+
+        /* =========================================================================== */
+        /* PRINT STYLES - This is the crucial part for making it print-ready */
+        /* =========================================================================== */
+        @media print {
+
+            /* 1. Set page size and margins for consistent output */
+            @page {
+                size: A4 portrait;
+                margin: 8mm;
+            }
+
+            /* 2. Make the main container full width and remove the outer border for a cleaner look */
+            .report-card {
+                max-width: none;
+                padding: 0;
+                margin: 0;
+                border: none;
+            }
+
+            /* 3. Keep the original flex/grid layouts, but remove background and box-shadow for optimal printing */
+            th {
+                background: #fff;
+            }
+
+            tbody tr:nth-child(even) {
+                background: #fff;
+            }
+
+            /* 4. Ensure all major sections stay together and don't get split across pages */
+            .header,
+            .student-box,
+            table,
+            .footer {
+                page-break-inside: avoid;
+            }
+
+            /* 5. Force all text to be black for printing and improve border visibility */
+            * {
+                color: #000 !important;
+                background: #fff !important;
+                box-shadow: none !important;
+            }
+
+            th,
+            td {
+                border-color: #000 !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="report-card">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="english-header" style="width: 300px">
+                <h1 style="font-size: 14px;">Republic of Cameroon</h1>
+                <h2>Peace – Work – Fatherland</h2>
+                <h2 style="text-transform: uppercase; font-size: 12px;">Ministry of Secondary Education</h2>
+                <h2 style="text-transform: uppercase; font-size: 12px;">Government Technical Teacher Training College
+                    (G.T.T.T.C) Kumba
+                </h2>
+            </div>
+            <div style="width: 120px; height: 120px;">
+                <img src="logo_eniet.png" alt="School Logo">
+            </div>
+
+            <div class="french-header" style="width: 300px;">
+                <h1 style="font-size: 14px;">République du Cameroun</h1>
+                <h2>Paix – Travail – Patrie</h2>
+                <h2 style="text-transform: uppercase; font-size: 12px;">Ministère des Enseignements Secondaires</h2>
+                <h2 style="text-transform: uppercase; font-size: 12px;">ECOLE NORMALE D'INSTITUTEURS DE
+                    L'ENSEIGNEMENT TECHNIQUE (E.N.I.E.T) DE KUMBA</h2>
+            </div>
+        </div>
+
+        <div class="term-title">Third Term Academic Report - {{academic_year}}</div>
+
+        <!-- STUDENT INFO -->
+        <div class="student-box">
+            <div class="student-details">
+                <div style="grid-column: span 2;"><strong>Name of Student:</strong> {{student_name}}</div>
+                <div><strong>Date of Birth:</strong> {{dob}}</div>
+                <div><strong>Class:</strong> {{class}}</div>
+                <div><strong>Gender:</strong> {{gender}}</div>
+                <div><strong>Number of Subjects:</strong> {{num_subjects}}</div>
+                <div><strong>Unique ID:</strong> {{student_id}}</div>
+                <div><strong>Number Passed:</strong> {{num_passed}}</div>
+                <div><strong>Repeater:</strong> {{repeater}}</div>
+                <div><strong>Class Master:</strong> {{class_master}}</div>
+            </div>
+            <div class="student-photo" style="width: 100px; height: 100px;">
+                <img src="https://placehold.co/150x180/e9e9e9/333333?text=Photo+Placeholder" alt="Student Photo"
+                    style="width: 100%;height: 100%;">
+            </div>
+        </div>
+
+        <!-- SUBJECTS TABLE -->
+        <table style="margin-bottom: 10px;">
+            <thead>
+                <tr>
+                    <th style="text-align: left;">Subjects and Teacher Names</th>
+                    <th>Competencies Evaluated</th>
+                    <th>Mks/20</th>
+                    <th>Mks/20</th>
+                    <th>Avg/20</th>
+                    <th>Coef</th>
+                    <th>Avg*Coef</th>
+                    <th>Grade</th>
+                    <th>Min-Max</th>
+                    <th>Remarks and Teacher Signature</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="width: 125px;text-align: left;">{{subject}}</td>
+                    <td style="width: 80px;">{{competencies}}</td>
+                    <td>{{marks}}</td>
+                    <td>{{marks}}</td>
+                    <td>{{average}}</td>
+                    <td>{{coef}}</td>
+                    <td style="width: 50px;">{{total}}</td>
+                    <td>{{grade}}</td>
+                    <td>{{min_max}}</td>
+                    <td style="padding: 0;">
+                        <table>
+                            <tr>
+                                <td style="border: none;">{{remark}}</td>
+                                <td style="width:30px; border: none; border-left: 1px solid #0000008f;"></td>
+                            </tr>
+                        </table>
+
+                    </td>
+                </tr>
+                <!-- Repeat dynamically -->
+            </tbody>
+        </table>
+
+        <!-- THREE-COLUMN JOINT TABLE -->
+        <table style="margin-bottom: 0px;border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th>Discipline</th>
+                    <th>Student Performance</th>
+                    <th>Class Profile</th>
+                </tr>
+            </thead>
+            <tbody style="vertical-align: top;" class="three-column-joint">
+                <tr>
+                    <!-- Discipline Column -->
+                    <td style="padding: 0; border-bottom: none;">
+                        <table style="width:100%; border-collapse:collapse; border: 0;">
+                            <tr>
+                                <th style="text-align:left;border: none;">Unjustified Abs</th>
+                                <td style="border: none; border-left:1px solid #0000008f;">{{unjustified_abs}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;border: none;border-top:1px solid #0000008f;">Justified Abs
+                                </th>
+                                <td
+                                    style="border: none; border-left:1px solid #0000008f;border-top:1px solid #0000008f;">
+                                    {{justified_abs}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;border: none;border-top:1px solid #0000008f;">Late (times)
+                                </th>
+                                <td
+                                    style="border: none; border-left:1px solid #0000008f;border-top:1px solid #0000008f;">
+                                    {{late}}</td>
+                            </tr>
+                            <tr>
+                                <th
+                                    style="text-align:left;border: none;border-top:1px solid #0000008f;border-top:1px solid #0000008f;">
+                                    Punishment
+                                    (hrs)</th>
+                                <td
+                                    style="border: none; border-left:1px solid #0000008f;border-top:1px solid #0000008f;">
+                                    {{punishment}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;border: none;border-top:1px solid #0000008f;">Conduct</th>
+                                <td
+                                    style="border: none; border-left:1px solid #0000008f;border-top:1px solid #0000008f;">
+                                    {{conduct}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;border: none;border-top:1px solid #0000008f;">Warnings</th>
+                                <td
+                                    style="border: none; border-left:1px solid #0000008f;border-top:1px solid #0000008f;">
+                                    {{warning}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;border: none;border-top:1px solid #0000008f;">Reprimands</th>
+                                <td
+                                    style="border: none; border-left:1px solid #0000008f;border-top:1px solid #0000008f;">
+                                    {{reprimand}}</td>
+                            </tr>
+                            <tr>
+                                <th
+                                    style="text-align:left;border: none;border-top:1px solid #0000008f;border-bottom:1px solid #0000008f;">
+                                    Suspensions
+                                </th>
+                                <td
+                                    style="border: none; border-left:1px solid #0000008f;border-top:1px solid #0000008f;border-bottom:1px solid #0000008f;">
+                                    {{suspension}}</td>
+                            </tr>
+                        </table>
+                    </td>
+
+                    <!-- Student Performance Column -->
+                    <td style="padding: 0;border-bottom: none; border-right: none;">
+                        <table style="width:100%; border-collapse:collapse; height: 100%;">
+                            <tr>
+                                <th style="text-align:left;border: none;">Total Score</th>
+                                <td style="border: none; border-left:1px solid #0000008f;">{{total_score}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;border: none;border-top:1px solid #0000008f;">Coefficient
+                                </th>
+                                <td
+                                    style="border: none; border-left:1px solid #0000008f;border-top:1px solid #0000008f;">
+                                    {{coef}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;border: none;border-top:1px solid #0000008f;">Rank
+                                </th>
+                                <td
+                                    style="border: none; border-left:1px solid #0000008f;border-top:1px solid #0000008f;">
+                                    {{rank}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;border: none;border-top:1px solid #0000008f;">Term Average
+                                </th>
+                                <td
+                                    style="border: none; border-left:1px solid #0000008f;border-top:1px solid #0000008f;">
+                                    {{term_average}}</td>
+                            </tr>
+                            <tr>
+                                <th
+                                    style="text-align:left;border: none;border-top:1px solid #0000008f;border-bottom:1px solid #0000008f;">
+                                    Remark</th>
+                                <td
+                                    style="border: none; border-left:1px solid #0000008f;border-top:1px solid #0000008f;border-bottom:1px solid #0000008f;">
+                                    {{performance_remark}}</td>
+                            </tr>
+                        </table>
+                    </td>
+
+                    <!-- Class Profile Column -->
+                    <td style="padding: 0;border: none;">
+                        <table style="width:100%; border-collapse:collapse;">
+                            <tr>
+                                <th style="text-align:left; border-top: none;">Class Average</th>
+                                <td style="border-top: none;">{{class_average}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;">Min - Max</th>
+                                <td>{{min_max}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;">No. Enrolled</th>
+                                <td>{{num_erolled}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;">No. Passed</th>
+                                <td>{{num_passed}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;">Annual Avg</th>
+                                <td>{{annual_average}}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align:left;">Annual Passed</th>
+                                <td>{{annual_num_passed}}</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <table style="margin-top: 10px;">
+            <thead>
+                <tr>
+                    <th>Remarks on Student Performance</th>
+                    <th>Parent/Guardian’s Signature</th>
+                    <th>Class Master’s Signature</th>
+                    <th>The Principal</th>
+                </tr>
+            </thead>
+            <tbody style="vertical-align: top;" class="three-column-joint">
+                <tr>
+                    <!-- Reamrk Column -->
+                    <td style="padding: 40px; width: 25%;">
+
+                    </td>
+
+                    <!-- Parent Signature Column -->
+                    <td style="padding: 40px;width: 25%;">
+
+                    </td>
+
+                    <!-- Class Master's Signature Column -->
+                    <td style="padding: 40px;width: 25%;">
+
+                    </td>
+
+                    <!-- Prinicplat's Column -->
+                    <td style="padding: 40px;width: 25%;">
+
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>

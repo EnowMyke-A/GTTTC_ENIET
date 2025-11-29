@@ -1,0 +1,369 @@
+/*@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");*/
+/* SF Pro Text Font Family */
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/SF-Pro-Text-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/SF-Pro-Text-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/SF-Pro-Text-Semibold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/SF-Pro-Text-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/SF-Pro-Text-Heavy.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 151 100% 17%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 151 100% 17%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 151 100% 17%;
+
+    /* GTTTC Brand Colors - more subtle usage */
+    --primary: 159 86% 18%; /* Slightly lighter green for better contrast */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 67 40% 63%; /* #CED46A Light Olive Green */
+    --secondary-foreground: 151 100% 17%;
+
+    --muted: 67 40% 95%;
+    --muted-foreground: 140 36% 8%;
+
+    --accent: 67 40% 63%; /* Light Olive Green */
+    --accent-foreground: 151 100% 17%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 151 20% 90%;
+    --input: 151 20% 95%;
+    --ring: 151 100% 17%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --faint-muted: 67 40% 100%;
+
+    /* Skeleton colors with olive green tint */
+    --skeleton: 140 36% 8%; /* Using muted-foreground color for skeleton elements */
+    --skeleton-card: 67 40% 98%; /* Very light olive tint for skeleton card backgrounds */
+  }
+
+  .dark {
+    --background: 151 100% 5%;
+    --foreground: 67 40% 95%;
+
+    --card: 151 100% 8%;
+    --card-foreground: 67 40% 95%;
+
+    --popover: 151 100% 8%;
+    --popover-foreground: 67 40% 95%;
+
+    --primary: 67 40% 63%; /* Light Olive Green for dark mode */
+    --primary-foreground: 151 100% 5%;
+
+    --secondary: 151 50% 20%;
+    --secondary-foreground: 67 40% 95%;
+
+    --muted: 151 50% 15%;
+    --muted-foreground: 67 20% 70%;
+
+    --accent: 151 50% 20%;
+    --accent-foreground: 67 40% 95%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 67 40% 95%;
+
+    --border: 151 50% 15%;
+    --input: 151 50% 15%;
+    --ring: 67 40% 63%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+    --faint-muted: 67 40% 100%;
+
+    /* Skeleton colors with olive green tint */
+    --skeleton: 67 20% 70%; /* Using muted-foreground color for dark mode skeleton elements */
+    --skeleton-card: 67 40% 12%; /* Darker olive tint for dark mode skeleton card backgrounds */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "SF Pro Text", sans-serif !important;
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE/Edge */
+    user-select: none; /* Standard syntax */
+  }
+
+  /* Apply Space Grotesk to all headings  
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Space Grotesk", sans-serif;
+  }
+    */
+
+  .logo-font {
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  .activity-item {
+    position: relative;
+  }
+
+  .activity-item::after {
+    content: ""; /* Required for pseudo-elements */
+    position: absolute;
+    bottom: -18px;
+    left: 0;
+    width: 2rem;
+    transform: rotate(90deg);
+    border-top: 1.5px dashed hsl(var(--accent));
+  }
+
+  .activity-item:last-child::after {
+    display: none;
+  }
+
+  .top-navigation {
+    background: hsl(0, 0%, 100%) !important;
+    border-bottom: 1px solid hsl(150, 20%, 90%);
+  }
+
+   .side-navigation{
+    border-right: 1px solid hsl(0, 0%, 93%);
+    background: hsl(0, 0%, 100%) !important;
+   }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent; /* faint thumb and transparent track */
+  }
+
+  /* For WebKit browsers (Chrome, Safari, Edge) */
+  *::-webkit-scrollbar {
+    width: 8px; /* Set a small width */
+    background-color: transparent; /* Makes the track invisible */
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #d1d5db; /* Faint color for the thumb */
+    border-radius: 4px;
+    border: 2px solid transparent; /* This creates a small gap from the edge */
+    background-clip: padding-box;
+    transition: background-color 0.3s ease-in-out; /* Smooth transition for hover effect */
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #6b7280; /* Darker color on hover, similar to Gemini */
+  }
+
+  /* You can add a scrollbar track as well, but we've hidden it for a cleaner look */
+  *::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* For Firefox */
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  .thin-spinner {
+    border-width: 1.5px !important;
+  }
+
+  /* Smooth height transitions for UI components */
+  .height-transition {
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .height-transition-fast {
+    transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .height-transition-slow {
+    transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Smooth opacity and transform transitions */
+  .content-transition {
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Collapsible content transitions */
+  .collapsible-content {
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .collapsible-content[data-state="closed"] {
+    max-height: 0;
+    opacity: 0;
+  }
+
+  .collapsible-content[data-state="open"] {
+    max-height: 1000px;
+    opacity: 1;
+  }
+
+  .modal-button{
+    margin-top: 1.5rem !important;
+  }
+
+  /* Input placeholder styling - make placeholders very faint */
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--muted-foreground) / 0.4) !important;
+    opacity: 1 !important;
+  }
+
+  /* For WebKit browsers */
+  input::-webkit-input-placeholder,
+  textarea::-webkit-input-placeholder {
+    color: hsl(var(--muted-foreground) / 0.4) !important;
+    opacity: 1 !important;
+  }
+
+  /* For Mozilla Firefox */
+  input::-moz-placeholder,
+  textarea::-moz-placeholder {
+    color: hsl(var(--muted-foreground) / 0.4) !important;
+    opacity: 1 !important;
+  }
+
+  /* For Microsoft Edge */
+  input:-ms-input-placeholder,
+  textarea:-ms-input-placeholder {
+    color: hsl(var(--muted-foreground) / 0.4) !important;
+    opacity: 1 !important;
+  }
+
+  /* Search input placeholder styling - more visible */
+  .search-input::placeholder {
+    color: hsl(var(--muted-foreground) / 0.7) !important;
+    opacity: 1 !important;
+  }
+
+  .search-input::-webkit-input-placeholder {
+    color: hsl(var(--muted-foreground) / 0.7) !important;
+    opacity: 1 !important;
+  }
+
+  .search-input::-moz-placeholder {
+    color: hsl(var(--muted-foreground) / 0.7) !important;
+    opacity: 1 !important;
+  }
+
+  .search-input:-ms-input-placeholder {
+    color: hsl(var(--muted-foreground) / 0.7) !important;
+    opacity: 1 !important;
+  }
+
+  /* Apple-style Squircle (Smooth Corners) Implementation */
+  /* Pure border-radius approach without box-shadow to avoid unwanted borders */
+  
+  .squircle-sm {
+    border-radius: 6px;
+  }
+
+  .squircle {
+    border-radius: 8px;
+  }
+
+  .squircle-md {
+    border-radius: 12px;
+  }
+
+  .squircle-lg {
+    border-radius: 16px;
+  }
+
+  .squircle-xl {
+    border-radius: 20px;
+  }
+
+  .squircle-2xl {
+    border-radius: 24px;
+  }
+
+  /* Optional: Add subtle border enhancement only when explicitly needed */
+  .squircle-bordered {
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.02);
+  }
+}
