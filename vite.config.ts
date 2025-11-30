@@ -11,31 +11,45 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     VitePWA({
+      registerType: 'autoUpdate',
+
+      workbox: {
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024 // 4 MB, adjust as needed
+      },
+
+      includeAssets: [
+        'favicon-96x96.png',
+        'favicon.ico',
+        'favicon.svg',
+        'apple-touch-icon.png'
+      ],
+
       manifest: {
-        name: "GTTTC Report System",
-        short_name: "GTTTC Reports",
-        start_url: ".",
-        display: "standalone",
-        background_color: "#ffffff",
-        theme_color: "#1e293b",
-        description: "Progressive Web Application for GTTTC academic reporting.",
+        name: 'GTTTC Report',
+        short_name: 'GTTTC Report',
+        description: 'An Automated Report Generation Software for GTTTC Kumba',
+        theme_color: '#ffffff',
+        background_color: '#ffffff',
+        display: 'standalone',
+        start_url: '/',
         icons: [
           {
-            src: "icons/icon-192x192.png",
-            sizes: "192x192",
-            type: "image/png"
+            src: 'web-app-manifest-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
           },
           {
-            src: "icons/icon-512x512.png",
-            sizes: "512x512",
-            type: "image/png"
+            src: 'web-app-manifest-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: 'web-app-manifest-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
-      },
-      registerType: "autoUpdate",
-      workbox: {
-        globPatterns: ["**/*.{js,css,html,png,svg,ico,json}"],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5 MiB
       }
     })
   ],
