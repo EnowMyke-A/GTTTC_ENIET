@@ -317,22 +317,11 @@ const Discipline = () => {
       ...prev,
       [studentId]: {
         ...prev[studentId],
-        student_id: studentId,
-        term_id: selectedTerm,
-        academic_year_id: selectedAcademicYear,
-        level_id: parseInt(selectedLevel),
-        unjustified_absences: 0,
-        justified_absences: 0,
-        lateness: 0,
-        punishment_hours: 0,
-        conduct: "Excellent",
-        warnings: 0,
-        reprimands: 0,
-        suspensions: 0,
         [field]: value,
       },
     }));
   };
+
 
   const saveDisciplineRecords = async () => {
     setSaving(true);

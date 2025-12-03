@@ -45,7 +45,7 @@ CREATE TABLE public.course_departments (
 );
 CREATE TABLE public.courses (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  name text NOT NULL UNIQUE,
+  name text NOT NULL,
   description text,
   department_id uuid,
   coefficient integer NOT NULL CHECK (coefficient > 0),
@@ -85,12 +85,20 @@ CREATE TABLE public.discipline_records (
   CONSTRAINT fk_discipline_records_academic_year FOREIGN KEY (academic_year_id) REFERENCES public.academic_years(id),
   CONSTRAINT discipline_records_level_id_fkey FOREIGN KEY (level_id) REFERENCES public.levels(id)
 );
+CREATE TABLE public.lecturer_courses (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  lecturer_id uuid NOT NULL,
+  course_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT lecturer_courses_pkey PRIMARY KEY (id),
+  CONSTRAINT lecturer_courses_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id),
+  CONSTRAINT lecturer_courses_lecturer_id_fkey FOREIGN KEY (lecturer_id) REFERENCES public.lecturers(id)
+);
 CREATE TABLE public.lecturers (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid,
   full_name text NOT NULL,
   photo_url text,
-  course_id uuid,
   created_at timestamp without time zone DEFAULT now(),
   class_master boolean NOT NULL DEFAULT false,
   level_id bigint,
@@ -98,7 +106,6 @@ CREATE TABLE public.lecturers (
   email text UNIQUE,
   CONSTRAINT lecturers_pkey PRIMARY KEY (id),
   CONSTRAINT lecturers_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
-  CONSTRAINT lecturers_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id),
   CONSTRAINT fk_lecturers_level_id FOREIGN KEY (level_id) REFERENCES public.levels(id),
   CONSTRAINT fk_lecturers_department_id FOREIGN KEY (department_id) REFERENCES public.departments(id)
 );
@@ -134,7 +141,7 @@ CREATE TABLE public.students (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,
   gender text NOT NULL CHECK (gender = ANY (ARRAY['Male'::text, 'Female'::text])),
-  dob date NOT NULL CHECK (age(dob::timestamp with time zone) >= '10 years'::interval AND age(dob::timestamp with time zone) <= '25 years'::interval),
+  dob date NOT NULL CHECK (age(dob::timestamp with time zone) >= '10 years'::interval AND age(dob::timestamp with time zone) <= '65 years'::interval),
   pob text,
   photo_url text,
   department_id uuid,
@@ -148,6 +155,6 @@ CREATE TABLE public.terms (
   label text NOT NULL UNIQUE CHECK (label = ANY (ARRAY['First'::text, 'Second'::text, 'Third'::text])),
   start_date date NOT NULL,
   end_date date NOT NULL,
-  is_active boolean DEFAULT false,
+  is_active boolean NOT NULL DEFAULT false,
   CONSTRAINT terms_pkey PRIMARY KEY (id)
 );

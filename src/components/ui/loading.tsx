@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import logo from "/logo_eniet.webp";
 
 interface LoadingProps {
   size?: "sm" | "md" | "lg" | "xl";
@@ -52,7 +53,7 @@ export const Loading = ({
         {showLogo && (
           <div className="relative z-10 flex items-center justify-center">
             <img
-              src="/logo_eniet.webp"
+              src={logo}
               alt="ENIET Logo"
               className={cn("object-contain", config.logo)}
             />

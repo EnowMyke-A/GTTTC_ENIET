@@ -17,6 +17,34 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+
+// Displays all courses assigned to a lecturer as badges
+const LecturerCoursesBadges = ({ lecturerId, courses }: { lecturerId: string, courses: any[] }) => {
+  const [assigned, setAssigned] = useState<string[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("lecturer_courses")
+        .select("course_id")
+        .eq("lecturer_id", lecturerId);
+      setAssigned(data ? data.map((lc: any) => lc.course_id) : []);
+    })();
+  }, [lecturerId]);
+  if (!assigned.length) return null;
+  return (
+    <div className="flex gap-1 flex-wrap">
+      {assigned.map((cid) => {
+        const course = courses.find((c) => c.id === cid);
+        return course ? (
+          <Badge key={cid} variant="secondary" className="bg-muted text-primary">
+            {course.name}
+          </Badge>
+        ) : null;
+      })}
+    </div>
+  );
+};
+
 import {
   Plus,
   Building2,
@@ -82,6 +110,8 @@ interface Level {
 const Lecturers = () => {
   const [lecturers, setLecturers] = useState<Lecturer[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [courseDeptFilter, setCourseDeptFilter] = useState<string>("");
+  const [courseLevelFilter, setCourseLevelFilter] = useState<string>("");
   const [departments, setDepartments] = useState<Department[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,16 +124,25 @@ const Lecturers = () => {
   const [formData, setFormData] = useState({
     full_name: "",
     phone: "",
-    course_id: "",
+    course_ids: [] as string[],
     class_master: false,
     department_id: "",
     level_id: "",
   });
+  const [lecturerCourseAssignments, setLecturerCourseAssignments] = useState<{course_id: string, lecturer_id: string}[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchData();
+    fetchLecturerCourseAssignments();
   }, []);
+
+  const fetchLecturerCourseAssignments = async () => {
+    const { data } = await supabase
+      .from("lecturer_courses")
+      .select("course_id, lecturer_id");
+    setLecturerCourseAssignments(data || []);
+  };
 
   const fetchData = async () => {
     try {
@@ -151,7 +190,6 @@ const Lecturers = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      // Only allow updating existing lecturers (no creation)
       if (!editingLecturer) {
         toast({
           variant: "destructive",
@@ -162,13 +200,11 @@ const Lecturers = () => {
         return;
       }
 
-      // Update existing lecturer assignment
+      // Update lecturer info (not course_id)
       const updateData: any = {
-        course_id: formData.course_id || null,
         class_master: formData.class_master,
       };
 
-      // Only include class-related fields if class master is checked
       if (
         formData.class_master &&
         formData.department_id &&
@@ -181,11 +217,25 @@ const Lecturers = () => {
         updateData.level_id = null;
       }
 
-      const { error } = await supabase
+      const { error: lecturerError } = await supabase
         .from("lecturers")
         .update(updateData)
         .eq("id", editingLecturer.id);
-      if (error) throw error;
+      if (lecturerError) throw lecturerError;
+
+      // Update lecturer_courses assignments
+      // Remove all current assignments for this lecturer
+      await supabase.from("lecturer_courses").delete().eq("lecturer_id", editingLecturer.id);
+      // Insert new assignments
+      if (formData.course_ids.length > 0) {
+        const inserts = formData.course_ids.map((course_id) => ({
+          lecturer_id: editingLecturer.id,
+          course_id,
+        }));
+        const { error: courseError } = await supabase.from("lecturer_courses").insert(inserts);
+        if (courseError) throw courseError;
+      }
+
       toast({
         title: "Success",
         description: "Lecturer assignment updated successfully",
@@ -195,7 +245,7 @@ const Lecturers = () => {
       setFormData({
         full_name: "",
         phone: "",
-        course_id: "",
+        course_ids: [],
         class_master: false,
         department_id: "",
         level_id: "",
@@ -212,6 +262,7 @@ const Lecturers = () => {
       setSubmitting(false);
     }
   };
+
 
   const deleteLecturer = async (id: string) => {
     setDeleting(true);
@@ -289,13 +340,18 @@ const Lecturers = () => {
     return "";
   };
 
-  const openEditDialog = (lecturer: Lecturer) => {
+  const openEditDialog = async (lecturer: Lecturer) => {
     setEditingLecturer(lecturer);
+    // Fetch assigned courses from lecturer_courses
+    const { data: lecturerCourses, error } = await supabase
+      .from("lecturer_courses")
+      .select("course_id")
+      .eq("lecturer_id", lecturer.id);
+    const assignedCourseIds = lecturerCourses ? lecturerCourses.map((lc: any) => lc.course_id) : [];
     setFormData({
       full_name: lecturer.full_name,
       phone: lecturer.phone || "",
-      course_id: lecturer.course_id || "",
-      password: "",
+      course_ids: assignedCourseIds,
       class_master: lecturer.class_master,
       department_id: lecturer.department_id || "",
       level_id: lecturer.level_id?.toString() || "",
@@ -308,8 +364,7 @@ const Lecturers = () => {
     setFormData({
       full_name: "",
       phone: "",
-      course_id: "",
-      password: generateRandomPassword(),
+      course_ids: [],
       class_master: false,
       department_id: "",
       level_id: "",
@@ -317,16 +372,28 @@ const Lecturers = () => {
     setDialogOpen(true);
   };
 
+
+
   const getAvailableCourses = () => {
-    if (editingLecturer) {
-      // When editing, show all courses including the currently assigned one
-      return courses;
+    // Only show courses that are unassigned or assigned to this lecturer
+    const currentLecturerId = editingLecturer?.id;
+    const assignedMap = new Map<string, string>();
+    lecturerCourseAssignments.forEach((a) => assignedMap.set(a.course_id, a.lecturer_id));
+    let filtered = courses.filter((course: any) => {
+      const assignedTo = assignedMap.get(course.id);
+      return !assignedTo || assignedTo === currentLecturerId;
+    });
+    if (courseDeptFilter && courseDeptFilter !== "all") {
+      filtered = filtered.filter((c: any) =>
+        (Array.isArray(c.departments)
+          ? c.departments.some((d: any) => d.id === courseDeptFilter)
+          : false)
+      );
     }
-    // When adding new lecturer, only show unassigned courses
-    const assignedCourseIds = lecturers
-      .filter((lecturer) => lecturer.course_id)
-      .map((lecturer) => lecturer.course_id);
-    return courses.filter((course) => !assignedCourseIds.includes(course.id));
+    if (courseLevelFilter && courseLevelFilter !== "all") {
+      filtered = filtered.filter((c: any) => c.level_id?.toString() === courseLevelFilter);
+    }
+    return filtered;
   };
 
   const getClassName = (
@@ -439,26 +506,61 @@ const Lecturers = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="course" className="text-xs">
-                  Course
-                </Label>
-                <Select
-                  value={formData.course_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, course_id: value })
-                  }
-                >
-                  <SelectTrigger className="text-sm">
-                    <SelectValue placeholder="Select course" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getAvailableCourses().map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
+                <Label className="text-sm font-medium">Courses</Label>
+                <div className="flex gap-2 mb-2">
+                  <Select value={courseDeptFilter} onValueChange={setCourseDeptFilter}>
+                    <SelectTrigger className="w-[150px] text-xs">
+                      <SelectValue placeholder="All Departments" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Departments</SelectItem>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.abbreviation || dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={courseLevelFilter} onValueChange={setCourseLevelFilter}>
+                    <SelectTrigger className="w-[120px] text-xs">
+                      <SelectValue placeholder="All Levels" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Levels</SelectItem>
+                      {levels.map((level) => (
+                        <SelectItem key={level.id} value={level.id.toString()}>
+                          {level.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-1 gap-3 mt-2 mb-5 max-h-32 overflow-y-auto border rounded-md p-2 bg-background">
+                  {getAvailableCourses().map((course) => (
+                    <div key={course.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={course.id}
+                        checked={(formData.course_ids ?? []).includes(course.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData((prev) => ({
+                              ...prev,
+                              course_ids: [...prev.course_ids, course.id],
+                            }));
+                          } else {
+                            setFormData((prev) => ({
+                              ...prev,
+                              course_ids: prev.course_ids.filter((id) => id !== course.id),
+                            }));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={course.id} className="text-xs font-light">
                         {course.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -469,7 +571,7 @@ const Lecturers = () => {
                     setFormData({ ...formData, class_master: !!checked })
                   }
                 />
-                <Label htmlFor="class_master" className="text-xs font-medium">
+                <Label htmlFor="class_master" className="text-sm font-medium">
                   Designate as Class Master
                 </Label>
               </div>
@@ -636,18 +738,7 @@ const Lecturers = () => {
                     </div>
                   )}
                   <div className="flex items-center gap-2">
-                  {lecturer.course_id && (
-                      <div>
-                        <div className="mt-1">
-                          <Badge
-                            variant={"secondary"}
-                            className="bg-muted text-primary hover:bg-accent/30"
-                          >
-                            {getCourseName(lecturer.course_id)}
-                          </Badge>
-                        </div>
-                      </div>
-                    )}
+                  <LecturerCoursesBadges lecturerId={lecturer.id} courses={courses} />
                     {lecturer.class_master &&
                       lecturer.department_id &&
                       lecturer.level_id && (

@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import logo from "/favicon.svg";
 import { Loader2, GraduationCap, Mail, User, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Loading } from "@/components/ui/loading";
 import { supabase } from "@/integrations/supabase/client";
@@ -542,9 +543,7 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10 p-4">
       <div className="w-full max-w-sm sm:max-w-md">
         <div className="text-center mb-6 sm:mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-primary rounded-lg mb-3 sm:mb-4">
-            <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-primary-foreground" />
-          </div>
+          <img className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 mb-4 sm:mb-4" src={logo} />
           <h1 className="text-xl sm:text-2xl font-bold text-primary">
             GTTTC ENIET Kumba
           </h1>

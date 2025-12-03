@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import logo from "/favicon.svg";
 import {
   GraduationCap,
   User,
@@ -50,9 +51,7 @@ const Navbar = () => {
             )}
 
             <div className="flex items-center space-x-2 flex-shrink-0">
-              <div className="bg-primary p-2 rounded-[8px] flex-shrink-0">
-                <GraduationCap className="h-6 w-6 sm:h-6 sm:w-6 text-primary-foreground" />
-              </div>
+              <img className="flex-shrink-0 w-[40px] h-[40px]" src={logo} />
               <div className="hidden sm:block flex-shrink-0">
                 <h1 className="text-lg sm:text-lg font-bold mb-0 whitespace-nowrap">
                   GTTTC ENIET
