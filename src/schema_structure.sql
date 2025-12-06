@@ -84,11 +84,9 @@ CREATE TABLE public.discipline_records (
   CONSTRAINT discipline_records_level_id_fkey FOREIGN KEY (level_id) REFERENCES public.levels(id)
 );
 CREATE TABLE public.lecturer_courses (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
   lecturer_id uuid NOT NULL,
   course_id uuid NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT lecturer_courses_pkey PRIMARY KEY (id),
   CONSTRAINT lecturer_courses_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id),
   CONSTRAINT lecturer_courses_lecturer_id_fkey FOREIGN KEY (lecturer_id) REFERENCES public.lecturers(id)
 );

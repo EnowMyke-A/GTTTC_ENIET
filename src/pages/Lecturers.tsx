@@ -108,6 +108,7 @@ interface Level {
 }
 
 const Lecturers = () => {
+  const [refreshKey, setRefreshKey] = useState(0);
   const [lecturers, setLecturers] = useState<Lecturer[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [courseDeptFilter, setCourseDeptFilter] = useState<string>("");
@@ -251,7 +252,9 @@ const Lecturers = () => {
         level_id: "",
       });
       setEditingLecturer(null);
-      fetchData();
+      await fetchData();
+      await fetchLecturerCourseAssignments();
+      setRefreshKey(k => k + 1);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -467,7 +470,7 @@ const Lecturers = () => {
   }
 
   return (
-    <div className="md:p-4 space-y-6">
+    <div key={refreshKey} className="md:p-4 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-muted-foreground/85">
@@ -737,7 +740,7 @@ const Lecturers = () => {
                       </span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-h-[32px]">
                   <LecturerCoursesBadges lecturerId={lecturer.id} courses={courses} />
                     {lecturer.class_master &&
                       lecturer.department_id &&
@@ -758,9 +761,7 @@ const Lecturers = () => {
                         </div>
                       )}
                       {
-                        !(lecturer.class_master &&
-                        lecturer.department_id &&
-                        lecturer.level_id) && (lecturer.course_id==null) && (
+                        lecturerCourseAssignments.filter(a => a.lecturer_id === lecturer.id).length === 0 && (
                           <div>
                             <div className="mt-1">
                               <Badge
@@ -772,7 +773,6 @@ const Lecturers = () => {
                             </div>
                           </div>
                         )
-
                       }
                     
                   </div>
@@ -785,9 +785,7 @@ const Lecturers = () => {
                       className="flex-1 border-0 bg-primary text-primary-foreground hover:bg-primary/95 hover:text-primary-foreground"
                     >
                       <Edit className="h-4 w-4 mr-1" />
-                      {!(lecturer.class_master &&
-                        lecturer.department_id &&
-                        lecturer.level_id) && (lecturer.course_id==null)? "Verify":"Edit"}
+                      {lecturerCourseAssignments.filter(a => a.lecturer_id === lecturer.id).length === 0 ? "Verify" : "Edit"}
                     </Button>
                     <Button
                       variant="destructive"
