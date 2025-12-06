@@ -47,13 +47,11 @@ CREATE TABLE public.courses (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,
   description text,
-  department_id uuid,
   coefficient integer NOT NULL CHECK (coefficient > 0),
   created_at timestamp with time zone DEFAULT now(),
   level_id bigint NOT NULL,
   code text,
   CONSTRAINT courses_pkey PRIMARY KEY (id),
-  CONSTRAINT courses_department_id_fkey FOREIGN KEY (department_id) REFERENCES public.departments(id),
   CONSTRAINT fk_courses_level_id FOREIGN KEY (level_id) REFERENCES public.levels(id)
 );
 CREATE TABLE public.departments (

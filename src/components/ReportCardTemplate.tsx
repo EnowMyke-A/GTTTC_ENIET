@@ -27,6 +27,7 @@ interface ReportCardTemplateProps {
       min_max_average: ReactNode;
       remark_on_average: ReactNode;
       subject: string;
+      teacher: string;
       competencies: string;
       marks: number;
       average: number;
@@ -162,7 +163,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
     /* HEADER */
     .header {
         text-align: center;
-        margin-bottom: 20px;
+        margin-bottom: 0px;
         border-bottom: 2px solid #000;
         padding-bottom: 4px;
         display: flex;
@@ -193,7 +194,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
     .term-title {
         text-align: center;
         font-weight: bold;
-        margin: 12px 0;
+        margin: 10px 0;
         font-size: 14px;
         text-transform: uppercase;
         text-decoration: underline;
@@ -201,12 +202,14 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
 
     /* STUDENT INFO */
     .student-box {
-        padding: 20px 0 10px;
-        margin-bottom: 15px;
+        padding: 0;
+        margin-bottom: 4px;
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
         flex-direction: row-reverse;
+        gap: 20px;
+
     }
 
     .student-details {
@@ -235,9 +238,13 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
     .report-card th,
     .report-card td {
         border: 1px solid #0000008f;
-        padding: 6px;
+        padding: 2px 6px;
         text-align: center;
         font-size: 12px;
+    }
+
+    .report-card .three-column-joint-table td td, .three-column-joint-table th{
+      padding: 4px 6px;
     }
 
     .report-card th {
@@ -387,8 +394,8 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
           {/* Center Logo — now using inline <img> with base64 */}
           <div
             style={{
-              width: "100px",
-              height: "100px",
+              width: "90px",
+              height: "90px",
               display: "flex",
               alignItems: "start",
               justifyContent: "center",
@@ -421,54 +428,95 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
         </div>
 
         <div className="term-title">
-          {data.term} Term Academic Report {data.academic_year}
+          {data.term} Term Academic Report Card {data.academic_year}
         </div>
 
         {/* STUDENT INFO */}
         <div className="student-box">
-          <div className="student-details">
-            <div style={{ gridColumn: "span 2" }}>
-              <span>Name of Student:</span>
-              <span style={{ textTransform: "uppercase", fontWeight: "500", fontSize: "13px", letterSpacing: "0.5px" }}>
-                {" "}
-                {data.student_name}
-              </span>
+          <div
+            className="student-details"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr",
+              gap:"0",
+              border: "1px solid #0000008f",
+              fontSize: "14px",
+              width: "100%",
+            }}
+          >
+            {/* ROW 1 */}
+            <div
+              style={{
+                gridColumn: "span 5",
+                borderBottom: "1px solid #0000008f",
+                padding: "2px 6px",
+              }}
+            >
+              <strong>Name of Student:</strong> {data.student_name}
             </div>
-            <div>
-              <span>Date and Place of Birth:</span> <span style={{fontWeight:"500"}}>{data.dob}, {data.pob}</span>
-            </div>
-            <div>
-              <span>Class: </span>
-              <span style={{fontWeight:"500"}}>{data.department}
-              <sub style={{ fontSize: "9px", marginTop: "2px", fontWeight:"500" }}>
+
+            <div
+              style={{
+                borderLeft: "1px solid #0000008f",
+                gridColumn: "span 1",
+                borderBottom: "1px solid #0000008f",
+                padding: "2px 6px",
+              }}  
+            >
+              <strong>Class:</strong> {data.department}
+              <sub style={{ fontSize: "9px", fontWeight: "500" }}>
                 {data.level}
               </sub>
-              </span>
             </div>
-            <div>
-              <span>Gender:</span> <span style={{fontWeight:"500"}}>{data.gender}</span> 
+
+            {/* ROW 2 */}
+            <div style={{ borderBottom: "1px solid #0000008f", padding: "2px 6px", gridColumn: "span 4", }}>
+              <strong>Date and Place of Birth:</strong> {data.dob}&nbsp;<b>at</b>&nbsp;{data.pob}
             </div>
-            <div>
-              <span>Number of Subjects:</span> <span style={{fontWeight:"500"}}>{data.num_subjects}</span>
+
+            <div
+              style={{
+                borderLeft: "1px solid #0000008f",
+                borderBottom: "1px solid #0000008f",
+                padding: "2px 6px",
+              }}
+            >
+              <strong>Gender:</strong> {data.gender}
             </div>
-            <div>
-              <span>Matricule:</span> <span style={{fontWeight:"500"}}>{data.student_id}</span>
+
+            <div
+              style={{
+                borderLeft: "1px solid #0000008f",
+                borderBottom: "1px solid #0000008f",
+                padding: "2px 6px",
+              }}
+            >
+              <strong>Repeater:</strong> {data.repeater}
             </div>
-            <div>
-              <span>No. Passed Subjects:</span> <span style={{fontWeight:"500"}}>{data.num_passed}</span>
+
+            {/* ROW 3 */}
+            <div style={{ padding: "2px 6px", gridColumn: "span 2" }}>
+              <strong>Matricule:</strong> {data.student_id}
             </div>
-            <div>
-              <span>Repeater:</span> <span style={{fontWeight:"500"}}>{data.repeater}</span>
+
+            <div style={{ borderLeft: "1px solid #0000008f", padding: "2px 6px" }}>
+              <strong>Subjects:</strong> {data.num_subjects}
             </div>
-            <div>
-              <span>Class Master:</span> <span style={{fontWeight:"500"}}>{data.class_master}</span>
+
+            <div style={{ borderLeft: "1px solid #0000008f", padding: "2px 6px" }}>
+              <strong>Subj. Passed:</strong> {data.num_passed}
+            </div>
+
+            <div style={{ borderLeft: "1px solid #0000008f", padding: "2px 6px", gridColumn: "span 2"  }}>
+              <strong>Class Master:</strong> {data.class_master}
             </div>
           </div>
+
           <div
             className="student-photo"
             style={{
-              width: "100px",
-              height: "100px",
+              width: "70px",
+              height: "70px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -496,7 +544,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
         </div>
 
         {/* SUBJECTS TABLE */}
-        <table style={{ marginBottom: "10px" }}>
+        <table style={{ marginBottom: "5px" }}>
           <thead>
             <tr>
               <th style={{ textAlign: "left" }}>Subjects and Teacher Names</th>
@@ -514,8 +562,18 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
           <tbody>
             {data.subjects.map((subject, index) => (
               <tr key={index}>
-                <td style={{ textAlign: "left", width: "180px" }}>
-                  {subject.subject}
+                <td
+                  style={{
+                    textAlign: "left",
+                    width: "180px",
+                    fontWeight: "500",
+    
+                  }}
+                >
+                  {subject.subject} <br />{" "}
+                  <span style={{ fontSize: "8px", fontWeight: "400", display: "block", marginTop: "-1px" }}>
+                    {subject.teacher}
+                  </span>
                 </td>
                 <td style={{ width: "80px" }}>{subject.competencies}</td>
                 <td
@@ -573,23 +631,48 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                   {subject.grade}
                 </td>
                 <td style={{ fontSize: "9px" }}>{subject.min_max_average}</td>
-                <td style={{ width: "100px", padding: "0" }}>
-                  <table>
-                    <tbody>
-                      <tr>
-                        <td style={{ border: "none" }}>
-                          {subject.remark_on_average}
-                        </td>
-                        <td
-                          style={{
-                            width: "30px",
-                            border: "none",
-                            borderLeft: "1px solid #0000008f",
-                          }}
-                        ></td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <td
+                  style={{
+                    width: "100px",
+                    padding: "0",
+                    verticalAlign: "top",
+                    position: "relative",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <table
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        borderCollapse: "collapse",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <tbody>
+                        <tr>
+                          <td style={{ border: "none" }}>
+                            {subject.remark_on_average}
+                          </td>
+                          <td
+                            style={{
+                              width: "30px",
+                              border: "none",
+                              borderLeft: "1px solid #0000008f",
+                            }}
+                          ></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -734,7 +817,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                         Rank
                       </th>
                       <td style={{ borderRight: "none" }}>
-                      {data.performance.class_postion}
+                        {data.performance.class_postion}
                         {/*formatOrdinalPosition(
                           Number(data.performance.class_postion)
                         )*/}
@@ -938,7 +1021,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
           </tbody>
         </table>
 
-        <table style={{ marginTop: "10px" }}>
+        <table style={{ marginTop: "5px" }}>
           <thead>
             <tr>
               <th>Remarks on Student Performance</th>
@@ -953,16 +1036,16 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
           >
             <tr>
               {/* Remark Column */}
-              <td style={{ padding: "25px", width: "25%" }}></td>
+              <td style={{ padding: "15px", width: "25%" }}></td>
 
               {/* Parent Signature Column */}
-              <td style={{ padding: "25px", width: "25%" }}></td>
+              <td style={{ padding: "15px", width: "25%" }}></td>
 
               {/* Class Master's Signature Column */}
-              <td style={{ padding: "25px", width: "25%" }}></td>
+              <td style={{ padding: "15px", width: "25%" }}></td>
 
               {/* Principal's Column */}
-              <td style={{ padding: "25px", width: "25%" }}></td>
+              <td style={{ padding: "15px", width: "25%" }}></td>
             </tr>
           </tbody>
         </table>

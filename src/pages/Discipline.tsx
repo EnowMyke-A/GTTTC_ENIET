@@ -399,8 +399,8 @@ const Discipline = () => {
         description: "Discipline records saved successfully",
       });
 
-      // Refresh the records
-      fetchDisciplineRecords();
+      // Refresh the records immediately
+      await fetchDisciplineRecords();
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -411,6 +411,7 @@ const Discipline = () => {
       setSaving(false);
     }
   };
+
 
   const getInitials = (name: string) => {
     return name
@@ -701,14 +702,29 @@ const Discipline = () => {
                             <Input
                               type="number"
                               min="0"
-                              value={record.unjustified_absences ?? 0}
-                              onChange={(e) =>
+                              value={
+                                typeof record.unjustified_absences === "number"
+                                  ? record.unjustified_absences === 0
+                                    ? "0"
+                                    : record.unjustified_absences.toString()
+                                  : record.unjustified_absences || ""
+                              }
+                              onChange={(e) => {
                                 updateDisciplineRecord(
                                   student.id,
                                   "unjustified_absences",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
+                                  e.target.value === "" ? "" : e.target.value.replace(/[^0-9]/g, "")
+                                );
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                const num = parseInt(val, 10);
+                                updateDisciplineRecord(
+                                  student.id,
+                                  "unjustified_absences",
+                                  val === "" || isNaN(num) || num < 0 ? 0 : num
+                                );
+                              }}
                               className="w-12 text-center m-auto"
                             />
                           </TableCell>
@@ -716,14 +732,29 @@ const Discipline = () => {
                             <Input
                               type="number"
                               min="0"
-                              value={record.justified_absences ?? 0}
-                              onChange={(e) =>
+                              value={
+                                typeof record.justified_absences === "number"
+                                  ? record.justified_absences === 0
+                                    ? "0"
+                                    : record.justified_absences.toString()
+                                  : record.justified_absences || ""
+                              }
+                              onChange={(e) => {
                                 updateDisciplineRecord(
                                   student.id,
                                   "justified_absences",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
+                                  e.target.value === "" ? "" : e.target.value.replace(/[^0-9]/g, "")
+                                );
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                const num = parseInt(val, 10);
+                                updateDisciplineRecord(
+                                  student.id,
+                                  "justified_absences",
+                                  val === "" || isNaN(num) || num < 0 ? 0 : num
+                                );
+                              }}
                               className="w-12 text-center m-auto"
                             />
                           </TableCell>
@@ -731,14 +762,29 @@ const Discipline = () => {
                             <Input
                               type="number"
                               min="0"
-                              value={record.lateness ?? 0}
-                              onChange={(e) =>
+                              value={
+                                typeof record.lateness === "number"
+                                  ? record.lateness === 0
+                                    ? "0"
+                                    : record.lateness.toString()
+                                  : record.lateness || ""
+                              }
+                              onChange={(e) => {
                                 updateDisciplineRecord(
                                   student.id,
                                   "lateness",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
+                                  e.target.value === "" ? "" : e.target.value.replace(/[^0-9]/g, "")
+                                );
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                const num = parseInt(val, 10);
+                                updateDisciplineRecord(
+                                  student.id,
+                                  "lateness",
+                                  val === "" || isNaN(num) || num < 0 ? 0 : num
+                                );
+                              }}
                               className="w-12 text-center m-auto"
                             />
                           </TableCell>
@@ -746,14 +792,29 @@ const Discipline = () => {
                             <Input
                               type="number"
                               min="0"
-                              value={record.punishment_hours ?? 0}
-                              onChange={(e) =>
+                              value={
+                                typeof record.punishment_hours === "number"
+                                  ? record.punishment_hours === 0
+                                    ? "0"
+                                    : record.punishment_hours.toString()
+                                  : record.punishment_hours || ""
+                              }
+                              onChange={(e) => {
                                 updateDisciplineRecord(
                                   student.id,
                                   "punishment_hours",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
+                                  e.target.value === "" ? "" : e.target.value.replace(/[^0-9]/g, "")
+                                );
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                const num = parseInt(val, 10);
+                                updateDisciplineRecord(
+                                  student.id,
+                                  "punishment_hours",
+                                  val === "" || isNaN(num) || num < 0 ? 0 : num
+                                );
+                              }}
                               className="w-12 text-center m-auto"
                             />
                           </TableCell>
@@ -785,14 +846,29 @@ const Discipline = () => {
                             <Input
                               type="number"
                               min="0"
-                              value={record.warnings ?? 0}
-                              onChange={(e) =>
+                              value={
+                                typeof record.warnings === "number"
+                                  ? record.warnings === 0
+                                    ? "0"
+                                    : record.warnings.toString()
+                                  : record.warnings || ""
+                              }
+                              onChange={(e) => {
                                 updateDisciplineRecord(
                                   student.id,
                                   "warnings",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
+                                  e.target.value === "" ? "" : e.target.value.replace(/[^0-9]/g, "")
+                                );
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                const num = parseInt(val, 10);
+                                updateDisciplineRecord(
+                                  student.id,
+                                  "warnings",
+                                  val === "" || isNaN(num) || num < 0 ? 0 : num
+                                );
+                              }}
                               className="w-12 text-center m-auto"
                             />
                           </TableCell>
@@ -800,14 +876,29 @@ const Discipline = () => {
                             <Input
                               type="number"
                               min="0"
-                              value={record.reprimands ?? 0}
-                              onChange={(e) =>
+                              value={
+                                typeof record.reprimands === "number"
+                                  ? record.reprimands === 0
+                                    ? "0"
+                                    : record.reprimands.toString()
+                                  : record.reprimands || ""
+                              }
+                              onChange={(e) => {
                                 updateDisciplineRecord(
                                   student.id,
                                   "reprimands",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
+                                  e.target.value === "" ? "" : e.target.value.replace(/[^0-9]/g, "")
+                                );
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                const num = parseInt(val, 10);
+                                updateDisciplineRecord(
+                                  student.id,
+                                  "reprimands",
+                                  val === "" || isNaN(num) || num < 0 ? 0 : num
+                                );
+                              }}
                               className="w-12 text-center m-auto"
                             />
                           </TableCell>
@@ -815,14 +906,29 @@ const Discipline = () => {
                             <Input
                               type="number"
                               min="0"
-                              value={record.suspensions ?? 0}
-                              onChange={(e) =>
+                              value={
+                                typeof record.suspensions === "number"
+                                  ? record.suspensions === 0
+                                    ? "0"
+                                    : record.suspensions.toString()
+                                  : record.suspensions || ""
+                              }
+                              onChange={(e) => {
                                 updateDisciplineRecord(
                                   student.id,
                                   "suspensions",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
+                                  e.target.value === "" ? "" : e.target.value.replace(/[^0-9]/g, "")
+                                );
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                const num = parseInt(val, 10);
+                                updateDisciplineRecord(
+                                  student.id,
+                                  "suspensions",
+                                  val === "" || isNaN(num) || num < 0 ? 0 : num
+                                );
+                              }}
                               className="w-12 text-center m-auto"
                             />
                           </TableCell>

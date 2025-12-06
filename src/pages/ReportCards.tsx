@@ -1496,7 +1496,7 @@ const ReportCards = () => {
             </DialogDescription>
           </DialogHeader>
           {modalReportData && (
-            <div className="p-12 rounded-md collapsible-content bg-[#f8f8f8]" data-state="open">
+            <div className="p-12 rounded-md bg-[#f8f8f8]" data-state="open">
               <div ref={modalPrintRef} className="mx-auto">
                 <ReportCardTemplate
                   data={transformDataForTemplate(modalReportData)}

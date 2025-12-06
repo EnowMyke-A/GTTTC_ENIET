@@ -51,7 +51,6 @@ interface Course {
   name: string;
   description: string | null;
   coefficient: number;
-  department_id: string;
   level_id: number;
   created_at: string;
   departments?: Department[];
@@ -159,7 +158,6 @@ const Courses = () => {
         description: formData.description || null,
         coefficient: parseInt(formData.coefficient),
         level_id: parseInt(formData.level_id),
-        department_id: formData.department_ids[0] || null, // Keep for backward compatibility
       };
 
       let courseId: string;
