@@ -549,6 +549,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
               alignItems: "center",
               justifyContent: "center",
               overflow: "hidden",
+              backgroundColor: "#efefefff",
             }}
           >
             {data.student_photo_base64 ? (
