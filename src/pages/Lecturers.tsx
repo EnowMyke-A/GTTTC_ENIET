@@ -154,10 +154,23 @@ const Lecturers = () => {
         levelsResponse,
       ] = await Promise.all([
         supabase.from("lecturers").select("*").order("created_at"),
+        
+        // --- UPDATED SECTION ---
         supabase
           .from("courses")
-          .select("id, name, description, coefficient")
+          .select(`
+            id, 
+            name, 
+            description, 
+            coefficient, 
+            level_id, 
+            departments (
+              id
+            )
+          `)
           .order("name"),
+        // -----------------------
+
         supabase
           .from("departments")
           .select("id, name, abbreviation")
@@ -186,6 +199,25 @@ const Lecturers = () => {
       }, 500);
     }
   };
+
+   function toTitleCase(value: string): string {
+  if (!value) return "";
+
+  return value
+    .split(/(\([^)]*\))/g) // split but keep bracketed parts
+    .map(part => {
+      // If part is inside brackets, return as-is
+      if (part.startsWith("(") && part.endsWith(")")) {
+        return part;
+      }
+
+      // Title-case only non-bracket text
+      return part
+        .toLowerCase()
+        .replace(/\b\w/g, char => char.toUpperCase());
+    })
+    .join("");
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,57 +324,6 @@ const Lecturers = () => {
     }
   };
 
-  // Format phone number to Cameroon format for API calls
-  const formatCameroonPhone = (phone: string): string => {
-    // Remove all non-digits
-    const digits = phone.replace(/\D/g, "");
-
-    // If starts with 237, use as is
-    if (digits.startsWith("237")) {
-      return `+${digits}`;
-    }
-
-    // If starts with 6, 7, or 2, add 237
-    if (digits.match(/^[672]/)) {
-      return `+237${digits}`;
-    }
-
-    return `+237${digits}`;
-  };
-
-  // Format phone number for display (groups of 3)
-  const formatPhoneDisplay = (phone: string): string => {
-    // Remove all non-digits
-    const digits = phone.replace(/\D/g, "");
-
-    // Handle different input scenarios
-    let cleanDigits = digits;
-
-    // If starts with 237, remove it for display formatting
-    if (digits.startsWith("237")) {
-      cleanDigits = digits.substring(3);
-    }
-
-    // Format as XXX XXX XXX
-    if (cleanDigits.length >= 9) {
-      return `+237 ${cleanDigits.substring(0, 3)} ${cleanDigits.substring(
-        3,
-        6
-      )} ${cleanDigits.substring(6, 9)}`;
-    } else if (cleanDigits.length >= 6) {
-      return `+237 ${cleanDigits.substring(0, 3)} ${cleanDigits.substring(
-        3,
-        6
-      )} ${cleanDigits.substring(6)}`;
-    } else if (cleanDigits.length >= 3) {
-      return `+237 ${cleanDigits.substring(0, 3)} ${cleanDigits.substring(3)}`;
-    } else if (cleanDigits.length > 0) {
-      return `+237 ${cleanDigits}`;
-    }
-
-    return "";
-  };
-
   const openEditDialog = async (lecturer: Lecturer) => {
     setEditingLecturer(lecturer);
     // Fetch assigned courses from lecturer_courses
@@ -393,6 +374,7 @@ const Lecturers = () => {
           : false)
       );
     }
+
     if (courseLevelFilter && courseLevelFilter !== "all") {
       filtered = filtered.filter((c: any) => c.level_id?.toString() === courseLevelFilter);
     }
@@ -422,12 +404,6 @@ const Lecturers = () => {
         lecturer.level_id === levelId &&
         lecturer.id !== editingLecturer?.id
     );
-  };
-
-  const getCourseName = (id: string | null) => {
-    if (!id) return "No assignment";
-    const course = courses.find((course) => course.id === id);
-    return course ? course.name : "Unknown";
   };
 
   if (loading) {
@@ -719,7 +695,7 @@ const Lecturers = () => {
                   <div className="bg-muted p-[12px] rounded-[50%]">
                     <UserCheck className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="text-muted-foreground/85">{lecturer.full_name}</span>
+                  <span className="truncate text-muted-foreground/85">{toTitleCase(lecturer.full_name)}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>

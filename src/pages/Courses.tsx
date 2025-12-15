@@ -242,6 +242,25 @@ const Courses = () => {
     }
   };
 
+  function toTitleCase(value: string): string {
+  if (!value) return "";
+
+  return value
+    .split(/(\([^)]*\))/g) // split but keep bracketed parts
+    .map(part => {
+      // If part is inside brackets, return as-is
+      if (part.startsWith("(") && part.endsWith(")")) {
+        return part;
+      }
+
+      // Title-case only non-bracket text
+      return part
+        .toLowerCase()
+        .replace(/\b\w/g, char => char.toUpperCase());
+    })
+    .join("");
+}
+
   const deleteCourse = async (id: string) => {
     setDeleting(true);
     try {
@@ -518,7 +537,7 @@ const Courses = () => {
 
       {showFilters && (
         <Card className="p-4 shadow-none text-muted-foreground/85 collapsible-content" data-state="open">
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <div className="flex flex-col sm:flex-row gap-4 lg:items-end">
             <div className="flex-1">
               <Label htmlFor="filter-level">Filter by Level</Label>
               <Select value={filterLevel} onValueChange={setFilterLevel}>
@@ -604,7 +623,7 @@ const Courses = () => {
                   <BookOpen className="h-4 w-4 text-primary flex-shrink-0" />
                 </div>
 
-                <span className="truncate text-muted-foreground/85">{course.name}</span>
+                <span className="truncate text-muted-foreground/85">{toTitleCase(course.name)}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="text-muted-foreground/80">
@@ -612,7 +631,7 @@ const Courses = () => {
                 {course.description && (
                   <div className="collapsible-content" data-state="open">
                     <p className="text-sm text-muted-foreground/85 mt-1 truncate">
-                      {course.description}
+                      {toTitleCase(course.description)}
                     </p>
                   </div>
                 )}

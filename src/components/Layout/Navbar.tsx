@@ -32,7 +32,7 @@ const Navbar = () => {
 
   return (
     <header className="text-primary bg-muted/50 shadow-[0] sticky top-0 z-50 border-b border-border/50 top-navigation">
-      <div className="w-full px-6">
+      <div className="w-full px-3 lg:px-6">
         <div className="flex items-center justify-between h-16 max-w-none">
           <div className="flex items-center space-x-4 flex-shrink-0">
             {isMobile && (

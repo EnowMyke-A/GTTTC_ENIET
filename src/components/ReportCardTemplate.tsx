@@ -1,5 +1,5 @@
 import React, { useEffect, useState, ReactNode } from "react";
-import Logo from "./logo_eniet.png";
+import Avatar from "/avatar.png";
 import { getBase64Image, LOGO_BASE64 } from "@/utils/imageUtils";
 import { Subscript } from "lucide-react";
 
@@ -76,6 +76,34 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
       return Math.round(num * 100) / 100;
     }
   }
+
+  function roundToTwoDecimalPlacesAvg(num: number): string {
+  if (!Number.isFinite(num)) {
+    return "0.00"; // or "--"
+  }
+
+  return num.toFixed(2);
+  }
+
+  function toTitleCase(value: string): string {
+  if (!value) return "";
+
+  return value
+    .split(/(\([^)]*\))/g) // split but keep bracketed parts
+    .map(part => {
+      // If part is inside brackets, return as-is
+      if (part.startsWith("(") && part.endsWith(")")) {
+        return part;
+      }
+
+      // Title-case only non-bracket text
+      return part
+        .toLowerCase()
+        .replace(/\b\w/g, char => char.toUpperCase());
+    })
+    .join("");
+}
+
 
   const formatOrdinalPosition = (position: number): JSX.Element => {
     const getOrdinalSuffix = (num: number): string => {
@@ -452,7 +480,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                 padding: "2px 6px",
               }}
             >
-              <strong>Name of Student:</strong> {data.student_name}
+              <span style={{fontWeight: "500"}}>Name of Student:</span>&nbsp;&nbsp;&nbsp;<strong style={{fontSize:"12px", letterSpacing:"1px"}}>{data.student_name}</strong> 
             </div>
 
             <div
@@ -463,7 +491,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                 padding: "2px 6px",
               }}  
             >
-              <strong>Class:</strong> {data.department}
+              <strong>Class:</strong>&nbsp;&nbsp;&nbsp;{data.department}
               <sub style={{ fontSize: "9px", fontWeight: "500" }}>
                 {data.level}
               </sub>
@@ -471,7 +499,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
 
             {/* ROW 2 */}
             <div style={{ borderBottom: "1px solid #0000008f", padding: "2px 6px", gridColumn: "span 4", }}>
-              <strong>Date and Place of Birth:</strong> {data.dob}&nbsp;<b>at</b>&nbsp;{data.pob}
+              <span style={{fontWeight: "500"}}>Date and Place of Birth:</span>&nbsp;&nbsp;&nbsp;{data.dob}&nbsp;<b>at</b>&nbsp;{data.pob}
             </div>
 
             <div
@@ -481,7 +509,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                 padding: "2px 6px",
               }}
             >
-              <strong>Gender:</strong> {data.gender}
+              <span style={{fontWeight: "500"}}>Gender:</span>&nbsp;&nbsp;&nbsp;{data.gender}
             </div>
 
             <div
@@ -491,24 +519,24 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                 padding: "2px 6px",
               }}
             >
-              <strong>Repeater:</strong> {data.repeater}
+              <span style={{fontWeight: "500"}}>Repeater:</span>&nbsp;&nbsp;&nbsp;{data.repeater}
             </div>
 
             {/* ROW 3 */}
             <div style={{ padding: "2px 6px", gridColumn: "span 2" }}>
-              <strong>Matricule:</strong> {data.student_id}
+              <span style={{fontWeight: "500"}}>Matricule:</span>&nbsp;&nbsp;&nbsp;{data.student_id}
             </div>
 
             <div style={{ borderLeft: "1px solid #0000008f", padding: "2px 6px" }}>
-              <strong>Subjects:</strong> {data.num_subjects}
+              <span style={{fontWeight: "500"}}>Subjects:</span>&nbsp;&nbsp;&nbsp;{data.num_subjects}
             </div>
 
             <div style={{ borderLeft: "1px solid #0000008f", padding: "2px 6px" }}>
-              <strong>Subj. Passed:</strong> {data.num_passed}
+              <span style={{fontWeight: "500"}}>Subj. Passed:</span>&nbsp;&nbsp;&nbsp;{data.num_passed}
             </div>
 
             <div style={{ borderLeft: "1px solid #0000008f", padding: "2px 6px", gridColumn: "span 2"  }}>
-              <strong>Class Master:</strong> {data.class_master}
+              <span style={{fontWeight: "500"}}>Class Master:</span>&nbsp;&nbsp;&nbsp;{data.class_master}
             </div>
           </div>
 
@@ -536,9 +564,17 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                 }}
               />
             ) : (
-              <div style={{ textAlign: "center", fontSize: "10px" }}>
-                Student Photo
-              </div>
+              <img
+                src={Avatar}
+                alt="Student Photo"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  WebkitPrintColorAdjust: "exact",
+                  printColorAdjust: "exact",
+                }}
+              />
             )}
           </div>
         </div>
@@ -567,12 +603,11 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                     textAlign: "left",
                     width: "180px",
                     fontWeight: "500",
-    
                   }}
                 >
-                  {subject.subject} <br />{" "}
+                  {toTitleCase(subject.subject)} <br />{" "}
                   <span style={{ fontSize: "8px", fontWeight: "400", display: "block", marginTop: "-1px" }}>
-                    {subject.teacher}
+                    {toTitleCase(subject.teacher)}
                   </span>
                 </td>
                 <td style={{ width: "80px" }}>{subject.competencies}</td>
@@ -828,7 +863,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                         Term Average
                       </th>
                       <td style={{ borderRight: "none" }}>
-                        {roundToTwoDecimalPlaces(
+                        {roundToTwoDecimalPlacesAvg(
                           Number(data.performance.term_average)
                         )}
                       </td>

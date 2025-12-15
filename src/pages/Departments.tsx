@@ -83,6 +83,25 @@ const Departments = () => {
     }
   };
 
+   function toTitleCase(value: string): string {
+  if (!value) return "";
+
+  return value
+    .split(/(\([^)]*\))/g) // split but keep bracketed parts
+    .map(part => {
+      // If part is inside brackets, return as-is
+      if (part.startsWith("(") && part.endsWith(")")) {
+        return part;
+      }
+
+      // Title-case only non-bracket text
+      return part
+        .toLowerCase()
+        .replace(/\b\w/g, char => char.toUpperCase());
+    })
+    .join("");
+}
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -306,14 +325,14 @@ const Departments = () => {
                 <div className="bg-muted p-[12px] rounded-[50%]">
                   <Building2 className="h-4 w-4 text-primary" />
                 </div>
-               <span className="text-muted-foreground/85">{department.name}</span>
+               <span className="truncate text-muted-foreground/85">{toTitleCase(department.name)}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {department.description && (
-                  <p className="text-sm text-muted-foreground/80 collapsible-content" data-state="open">
-                    {department.description}
+                  <p className="truncate text-sm text-muted-foreground/80 collapsible-content" data-state="open">
+                    {toTitleCase(department.description)}
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground/70">
