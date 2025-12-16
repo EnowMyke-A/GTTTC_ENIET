@@ -681,7 +681,7 @@ const Marks = () => {
 
       {/* Excel-like Marks Table */}
       {selectedCourse && selectedTerm && (
-        <Card className="shadow-[0] collapsible-content" data-state="open">
+        <Card className="shadow-[0]" data-state="open">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>

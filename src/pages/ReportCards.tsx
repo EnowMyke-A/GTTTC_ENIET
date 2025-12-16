@@ -1363,7 +1363,7 @@ const ReportCards = () => {
 
       {/* Students Table */}
       {(fetchingStudents || students.length > 0) && selectedAcademicYear && selectedTerm && selectedDepartment && selectedLevel && (
-        <Card className="shadow-none pt-6 border-0 collapsible-content" data-state="open">
+        <Card className="shadow-none pt-6 border-0" data-state="open">
           <CardContent className="px-0">
             <div className="overflow-x-auto">
               <Table>
