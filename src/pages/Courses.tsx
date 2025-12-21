@@ -475,7 +475,7 @@ const Courses = () => {
                     <SelectContent>
                       {levels.map((level) => (
                         <SelectItem key={level.id} value={level.id.toString()}>
-                          {level.name}
+                          {toTitleCase(level.name)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -547,7 +547,7 @@ const Courses = () => {
                 <SelectContent>
                   {levels.map((level) => (
                     <SelectItem key={level.id} value={level.id.toString()}>
-                      {level.name}
+                      {toTitleCase(level.name)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -566,7 +566,7 @@ const Courses = () => {
                 <SelectContent>
                   {departments.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
+                      {toTitleCase(dept.name)}
                     </SelectItem>
                   ))}
                 </SelectContent>

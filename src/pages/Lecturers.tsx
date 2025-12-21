@@ -37,7 +37,7 @@ const LecturerCoursesBadges = ({ lecturerId, courses }: { lecturerId: string, co
         const course = courses.find((c) => c.id === cid);
         return course ? (
           <Badge key={cid} variant="secondary" className="bg-muted text-primary">
-            {course.name}
+            {course.name} - {course.levels?.name || `Level ${course.level_id}`}
           </Badge>
         ) : null;
       })}
@@ -166,6 +166,10 @@ const Lecturers = () => {
             level_id, 
             departments (
               id
+            ),
+            levels (
+              id,
+              name
             )
           `)
           .order("name"),
@@ -486,7 +490,7 @@ const Lecturers = () => {
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Courses</Label>
-                <div className="flex gap-2 mb-2">
+                <div className="flex gap-2 mb-4">
                   <Select value={courseDeptFilter} onValueChange={setCourseDeptFilter}>
                     <SelectTrigger className="w-[150px] text-xs">
                       <SelectValue placeholder="All Departments" />
@@ -495,7 +499,7 @@ const Lecturers = () => {
                       <SelectItem value="all">All Departments</SelectItem>
                       {departments.map((dept) => (
                         <SelectItem key={dept.id} value={dept.id}>
-                          {dept.abbreviation || dept.name}
+                          {dept.abbreviation || dept.name} Depatment
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -508,13 +512,13 @@ const Lecturers = () => {
                       <SelectItem value="all">All Levels</SelectItem>
                       {levels.map((level) => (
                         <SelectItem key={level.id} value={level.id.toString()}>
-                          {level.name}
+                          Level {level.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-1 gap-3 mt-2 mb-5 max-h-32 overflow-y-auto border rounded-md p-2 bg-background">
+                <div className="grid grid-cols-1 gap-3 mt-4 mb-5 max-h-[180px] overflow-y-auto border rounded-md p-2 bg-background">
                   {getAvailableCourses().map((course) => (
                     <div key={course.id} className="flex items-center space-x-2">
                       <Checkbox
@@ -535,7 +539,7 @@ const Lecturers = () => {
                         }}
                       />
                       <Label htmlFor={course.id} className="text-xs font-light">
-                        {course.name}
+                        {course.name} - {`L${course.levels?.name}` || `Level ${course.level_id}`}
                       </Label>
                     </div>
                   ))}

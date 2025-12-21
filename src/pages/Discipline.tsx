@@ -86,6 +86,25 @@ interface Level {
   name: string;
 }
 
+function toTitleCase(value: string): string {
+  if (!value) return "";
+
+  return value
+    .split(/(\([^)]*\))/g) // split but keep bracketed parts
+    .map(part => {
+      // If part is inside brackets, return as-is
+      if (part.startsWith("(") && part.endsWith(")")) {
+        return part;
+      }
+
+      // Title-case only non-bracket text
+      return part
+        .toLowerCase()
+        .replace(/\b\w/g, char => char.toUpperCase());
+    })
+    .join("");
+}
+
 const Discipline = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -522,8 +541,7 @@ const Discipline = () => {
                 <SelectContent>
                   {academicYears.map((year) => (
                     <SelectItem key={year.id} value={year.id}>
-                      {year.label}
-                      {year.is_active ? " (current)" : ""}
+                      {toTitleCase(year.label)} {year.is_active && "(Current)"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -539,7 +557,7 @@ const Discipline = () => {
                 <SelectContent>
                   {terms.map((term) => (
                     <SelectItem key={term.id} value={term.id}>
-                      {term.label}
+                      {toTitleCase(term.label)}
                       {term.is_active ? " (current)" : ""}
                     </SelectItem>
                   ))}
@@ -556,7 +574,7 @@ const Discipline = () => {
                 <SelectContent>
                   {levels.map((level) => (
                     <SelectItem key={level.id} value={level.id.toString()}>
-                      Level {level.name}
+                      Level {toTitleCase(level.name)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -616,7 +634,7 @@ const Discipline = () => {
                     <SelectItem value="all">All Departments</SelectItem>
                     {departments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.id.toString()}>
-                        {dept.name}
+                        {toTitleCase(dept.name)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -834,11 +852,11 @@ const Discipline = () => {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="Excellent">
-                                  Excellent
+                                  {toTitleCase("Excellent")}
                                 </SelectItem>
-                                <SelectItem value="Good">Good</SelectItem>
-                                <SelectItem value="Fair">Fair</SelectItem>
-                                <SelectItem value="Poor">Poor</SelectItem>
+                                <SelectItem value="Good">{toTitleCase("Good")}</SelectItem>
+                                <SelectItem value="Fair">{toTitleCase("Fair")}</SelectItem>
+                                <SelectItem value="Poor">{toTitleCase("Poor")}</SelectItem>
                               </SelectContent>
                             </Select>
                           </TableCell>

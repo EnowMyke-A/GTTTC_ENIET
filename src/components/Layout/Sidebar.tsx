@@ -20,7 +20,8 @@ import {
   LayoutPanelLeft,
   Home,
   House,
-  Scale
+  Scale,
+  UsersRound
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -45,7 +46,7 @@ const Sidebar = ({ className }: SidebarProps) => {
     { icon: Scale, label: "Discipline", path: "/discipline" },
     { icon: FileText, label: "Report Cards", path: "/report-cards" },
     { icon: TrendingUp, label: "Statistics", path: "/analytics" },
-   
+    { icon: UsersRound, label: "Class Council", path: "/class-council" },
   ];
 
   const lecturerNavItems = [

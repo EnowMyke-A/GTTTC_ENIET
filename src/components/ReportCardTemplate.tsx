@@ -147,31 +147,16 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
       font-style: normal;
       font-display: swap;
     }
-    /* Print Mode Styles */
-    @media print {
-      .report-card {
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-      
-      @page {
-        size: A4;
-        margin: 0;
-      }
-
-      /* Use Archivo Narrow font only in print mode */
-      .report-card * {
-        font-family: "Roboto Condensed", sans-serif !important;
-      }
-    }
-    /* Scoped styles for report card only */
+        /* Scoped styles for report card only */
     .report-card {
         margin: 0;
-        padding: 0;
+        padding: 2px;
+        padding-top: 5px;
         background: #fff;
         color: #000;
         font-size: 12px;
+        border: 2px solid #000;
+        box-sizing: border-box;
     }
     
     .report-card *{
@@ -185,15 +170,58 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
         max-width: 850px;
         margin: auto;
         padding: 20px 30px;
-        border: 2px solid #0000008f;
+        border: 1.5px solid #000 !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Subjects table styling */
+    .report-card table.subjects-table tbody tr td {
+        height: 32px !important;
+    }
+
+    /* Watermark styling */
+    .watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 0.07 !important;
+        pointer-events: none;
+        z-index: 1;
+        width: 300px;
+        height: 300px;
+        background-image: url('/logo_eniet.png');
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+    }
+
+    @media print {
+        .watermark {
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            opacity: 0.06 !important;
+            pointer-events: none !important;
+            z-index: 1 !important;
+            width: 400px !important;
+            height: 400px !important;
+            background-image: url('/logo_eniet.png') !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            background-size: contain !important;
+        }
     }
 
     /* HEADER */
     .header {
         text-align: center;
+        width: 95%;
+        margin: auto;
         margin-bottom: 0px;
         border-bottom: 2px solid #000;
-        padding-bottom: 4px;
+        padding-bottom: 2px;
         display: flex;
         justify-content: space-between;
         flex-wrap: nowrap;
@@ -231,7 +259,9 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
     /* STUDENT INFO */
     .student-box {
         padding: 0;
-        margin-bottom: 4px;
+        margin: auto;
+        width: 98%;
+        margin-bottom: 10px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -265,7 +295,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
 
     .report-card th,
     .report-card td {
-        border: 1px solid #0000008f;
+        border: 1.5px solid #000000dc ;
         padding: 2px 6px;
         text-align: center;
         font-size: 12px;
@@ -305,7 +335,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
     }
 
     .footer div {
-        border-top: 1px solid #000;
+        border-top: 1.5px solid #000;
         padding-top: 25px;
     }
 
@@ -361,7 +391,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
       /* Make borders visible in print */
       .report-card th, 
       .report-card td {
-        border-color: #0000008f !important;
+        border-color: #000000dc  !important;
         word-wrap: break-word !important;
         white-space: normal !important;
       }
@@ -381,8 +411,40 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
       font-weight: 500 !important;
       }
 
+      .report-card table.subjects-table tbody tr td{
+        height: 30px !important;
+      }
+
       /* Background images still won't print unless user enables them,
         so we don't rely on them for logos/photos. */
+    }
+
+    /* Print Mode Styles - moved to end for higher specificity */
+    @media print {
+      .report-card {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 2px !important;
+        border: 1.5px solid #000 !important;
+        box-sizing: border-box !important;
+      }
+      
+      @page {
+        size: A4;
+        margin: 5mm 5mm 5mm 5mm;
+      }
+
+      /* Use Archivo Narrow font only in print mode */
+      .report-card * {
+        font-family: "Roboto Condensed", sans-serif !important;
+      }
+
+      /* Ensure border is visible in print */
+      .isolate .report-card {
+        border: 2px solid #000000dc !important;
+        padding: 2px !important;
+        padding-top: 5px !important;
+      }
     }
 
   `;
@@ -401,9 +463,26 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
       : "F";
   }
 
+  function getAcademicPerformanceRemark(data: any): string {
+    // Extract term number from data.term (e.g., "First", "Second", "Third")
+    const termName = data.term?.toString().toLowerCase();
+    
+    if (termName?.includes("first") || termName?.includes("second")) {
+      // For Term 1 and 2: Check term_average
+      return data.performance?.term_average >= 12 ? "PASSED" : "FAILED";
+    } else if (termName?.includes("third")) {
+      // For Term 3: Check annual_average
+      return data.performance?.annual_average >= 12 ? "PROMOTED" : "FAILED";
+    } else {
+      // Fallback for unknown terms
+      return data.performance?.term_average >= 12 ? "PASSED" : "FAILED";
+    }
+  }
+
   return (
-    <div className="isolate">
+    <div className="isolate" style={{ position: "relative", minHeight: "100vh" }}>
       <style dangerouslySetInnerHTML={{ __html: styles }} />
+      <div className="watermark" />
       <div className="report-card" style={{ all: "revert" }}>
         {/* HEADER */}
         <div className="header">
@@ -467,7 +546,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
               display: "grid",
               gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr",
               gap:"0",
-              border: "1px solid #0000008f",
+              border: "2px solid #000000dc ",
               fontSize: "14px",
               width: "100%",
             }}
@@ -476,8 +555,8 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
             <div
               style={{
                 gridColumn: "span 5",
-                borderBottom: "1px solid #0000008f",
-                padding: "2px 6px",
+                borderBottom: "2px solid #000000dc ",
+                padding: "3px 6px",
               }}
             >
               <span style={{fontWeight: "500"}}>Name of Student:</span>&nbsp;&nbsp;&nbsp;<strong style={{fontSize:"12px", letterSpacing:"1px"}}>{data.student_name}</strong> 
@@ -485,10 +564,10 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
 
             <div
               style={{
-                borderLeft: "1px solid #0000008f",
+                borderLeft: "2px solid #000000dc ",
                 gridColumn: "span 1",
-                borderBottom: "1px solid #0000008f",
-                padding: "2px 6px",
+                borderBottom: "2px solid #000000dc ",
+                padding: "3px 6px",
               }}  
             >
               <strong>Class:</strong>&nbsp;&nbsp;&nbsp;{data.department}
@@ -498,15 +577,15 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
             </div>
 
             {/* ROW 2 */}
-            <div style={{ borderBottom: "1px solid #0000008f", padding: "2px 6px", gridColumn: "span 4", }}>
+            <div style={{ borderBottom: "2px solid #000000dc ", padding: "3px 6px", gridColumn: "span 4", }}>
               <span style={{fontWeight: "500"}}>Date and Place of Birth:</span>&nbsp;&nbsp;&nbsp;{data.dob}&nbsp;<b>at</b>&nbsp;{data.pob}
             </div>
 
             <div
               style={{
-                borderLeft: "1px solid #0000008f",
-                borderBottom: "1px solid #0000008f",
-                padding: "2px 6px",
+                borderLeft: "2px solid #000000dc ",
+                borderBottom: "2px solid #000000dc ",
+                padding: "3px 6px",
               }}
             >
               <span style={{fontWeight: "500"}}>Gender:</span>&nbsp;&nbsp;&nbsp;{data.gender}
@@ -514,28 +593,28 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
 
             <div
               style={{
-                borderLeft: "1px solid #0000008f",
-                borderBottom: "1px solid #0000008f",
-                padding: "2px 6px",
+                borderLeft: "2px solid #000000dc ",
+                borderBottom: "2px solid #000000dc ",
+                padding: "3px 6px",
               }}
             >
               <span style={{fontWeight: "500"}}>Repeater:</span>&nbsp;&nbsp;&nbsp;{data.repeater}
             </div>
 
             {/* ROW 3 */}
-            <div style={{ padding: "2px 6px", gridColumn: "span 2" }}>
+            <div style={{ padding: "3px 6px", gridColumn: "span 2" }}>
               <span style={{fontWeight: "500"}}>Matricule:</span>&nbsp;&nbsp;&nbsp;{data.student_id}
             </div>
 
-            <div style={{ borderLeft: "1px solid #0000008f", padding: "2px 6px" }}>
+            <div style={{ borderLeft: "2px solid #000000dc ", padding: "3px 6px" }}>
               <span style={{fontWeight: "500"}}>Subjects:</span>&nbsp;&nbsp;&nbsp;{data.num_subjects}
             </div>
 
-            <div style={{ borderLeft: "1px solid #0000008f", padding: "2px 6px" }}>
+            <div style={{ borderLeft: "2px solid #000000dc ", padding: "3px 6px" }}>
               <span style={{fontWeight: "500"}}>Subj. Passed:</span>&nbsp;&nbsp;&nbsp;{data.num_passed}
             </div>
 
-            <div style={{ borderLeft: "1px solid #0000008f", padding: "2px 6px", gridColumn: "span 2"  }}>
+            <div style={{ borderLeft: "2px solid #000000dc ", padding: "3px 6px", gridColumn: "span 2"  }}>
               <span style={{fontWeight: "500"}}>Class Master:</span>&nbsp;&nbsp;&nbsp;{data.class_master}
             </div>
           </div>
@@ -581,7 +660,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
         </div>
 
         {/* SUBJECTS TABLE */}
-        <table style={{ marginBottom: "5px" }}>
+        <table className="subjects-table" style={{ marginBottom: "2px" }}>
           <thead>
             <tr>
               <th style={{ textAlign: "left" }}>Subjects and Teacher Names</th>
@@ -607,7 +686,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                   }}
                 >
                   {toTitleCase(subject.subject)} <br />{" "}
-                  <span style={{ fontSize: "8px", fontWeight: "400", display: "block", marginTop: "-1px" }}>
+                  <span style={{ fontSize: "9px", fontWeight: "400", display: "block", marginTop: "-1px", textTransform: "uppercase" }}>
                     {toTitleCase(subject.teacher)}
                   </span>
                 </td>
@@ -695,14 +774,16 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                     >
                       <tbody>
                         <tr>
-                          <td style={{ border: "none" }}>
+                          <td style={{ border: "none", color: shouldDisplayRed(Number(subject.average), "score")
+                      ? "red"
+                      : "inherit", }}>
                             {subject.remark_on_average}
                           </td>
                           <td
                             style={{
                               width: "30px",
                               border: "none",
-                              borderLeft: "1px solid #0000008f",
+                              borderLeft: "1.5px solid #000000dc ",
                             }}
                           ></td>
                         </tr>
@@ -750,7 +831,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                   padding: 0,
                   verticalAlign: "top",
                   border: "none",
-                  borderRight: "1px solid #0000008f",
+                  borderRight: "1.5px solid #000000dc ",
                 }}
               >
                 <table
@@ -819,7 +900,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                   padding: 0,
                   verticalAlign: "top",
                   border: "none",
-                  borderRight: "1px solid #0000008f",
+                  borderRight: "1.5px solid #000000dc ",
                 }}
               >
                 <table
@@ -860,10 +941,12 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                       </td>
                     </tr>
                     <tr>
-                      <th style={{ textAlign: "left", borderLeft: "none" }}>
+                      <th style={{ textAlign: "left", borderLeft: "none",}}>
                         Term Average
                       </th>
-                      <td style={{ borderRight: "none" }}>
+                      <td style={{ borderRight: "none", color: shouldDisplayRed(Number(data.performance.term_average), "score")
+                      ? "red"
+                      : "inherit",  }}>
                         {roundToTwoDecimalPlacesAvg(
                           Number(data.performance.term_average)
                         )}
@@ -873,7 +956,9 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                       <th style={{ textAlign: "left", borderLeft: "none" }}>
                         Grade
                       </th>
-                      <td style={{ borderRight: "none" }}>
+                      <td style={{ borderRight: "none", color: shouldDisplayRed(Number(data.performance.term_average), "score")
+                      ? "red"
+                      : "inherit", }}>
                         {getGradeFromAverage(
                           roundToTwoDecimalPlaces(
                             Number(data.performance.term_average)
@@ -915,8 +1000,8 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                               <th
                                 style={{
                                   border: "none",
-                                  borderRight: "1px solid #0000008f",
-                                  borderBottom: "1px solid #0000008f",
+                                  borderRight: "1.5px solid #000000dc ",
+                                  borderBottom: "1.5px solid #000000dc ",
                                 }}
                               >
                                 CVWA
@@ -924,8 +1009,8 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                               <th
                                 style={{
                                   border: "none",
-                                  borderRight: "1px solid #0000008f",
-                                  borderBottom: "1px solid #0000008f",
+                                  borderRight: "1.5px solid #000000dc ",
+                                  borderBottom: "1.5px solid #000000dc ",
                                 }}
                               >
                                 CWA
@@ -933,8 +1018,8 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                               <th
                                 style={{
                                   border: "none",
-                                  borderRight: "1px solid #0000008f",
-                                  borderBottom: "1px solid #0000008f",
+                                  borderRight: "1.5px solid #000000dc ",
+                                  borderBottom: "1.5px solid #000000dc ",
                                 }}
                               >
                                 CA
@@ -942,8 +1027,8 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                               <th
                                 style={{
                                   border: "none",
-                                  borderRight: "1px solid #0000008f",
-                                  borderBottom: "1px solid #0000008f",
+                                  borderRight: "1.5px solid #000000dc ",
+                                  borderBottom: "1.5px solid #000000dc ",
                                 }}
                               >
                                 CAA
@@ -951,7 +1036,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                               <th
                                 style={{
                                   border: "none",
-                                  borderBottom: "1px solid #0000008f",
+                                  borderBottom: "1.5px solid #000000dc ",
                                 }}
                               >
                                 CAN
@@ -963,7 +1048,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                               <td
                                 style={{
                                   border: "none",
-                                  borderRight: "1px solid #0000008f",
+                                  borderRight: "1.5px solid #000000dc ",
                                 }}
                               >
                                 &nbsp;
@@ -971,7 +1056,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                               <td
                                 style={{
                                   border: "none",
-                                  borderRight: "1px solid #0000008f",
+                                  borderRight: "1.5px solid #000000dc ",
                                 }}
                               >
                                 &nbsp;
@@ -979,7 +1064,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                               <td
                                 style={{
                                   border: "none",
-                                  borderRight: "1px solid #0000008f",
+                                  borderRight: "1.5px solid #000000dc ",
                                 }}
                               >
                                 &nbsp;
@@ -987,7 +1072,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                               <td
                                 style={{
                                   border: "none",
-                                  borderRight: "1px solid #0000008f",
+                                  borderRight: "1.5px solid #000000dc ",
                                 }}
                               >
                                 &nbsp;
@@ -1057,7 +1142,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
           </tbody>
         </table>
 
-        <table style={{ marginTop: "5px" }}>
+        <table style={{ marginTop: "2px" }}>
           <thead>
             <tr>
               <th>Remarks on Student Performance</th>
@@ -1072,16 +1157,18 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
           >
             <tr>
               {/* Remark Column */}
-              <td style={{ padding: "15px", width: "25%" }}></td>
+              <td style={{ padding: "10px", width: "25%", fontWeight: "bold", fontSize: "15px", textAlign: "center" , verticalAlign: "center", color:getAcademicPerformanceRemark(data)=="FAILED" ? "#FF0000" : "#0D1C12D9"}}>
+                {getAcademicPerformanceRemark(data)}
+              </td>
 
               {/* Parent Signature Column */}
-              <td style={{ padding: "15px", width: "25%" }}></td>
+              <td style={{ padding: "25px", width: "25%" }}></td>
 
               {/* Class Master's Signature Column */}
-              <td style={{ padding: "15px", width: "25%" }}></td>
+              <td style={{ padding: "25px", width: "25%" }}></td>
 
               {/* Principal's Column */}
-              <td style={{ padding: "15px", width: "25%" }}></td>
+              <td style={{ padding: "25px", width: "25%" }}></td>
             </tr>
           </tbody>
         </table>

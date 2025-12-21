@@ -76,6 +76,25 @@ const formatOrdinalPosition = (position: number): JSX.Element => {
   );
 };
 
+function toTitleCase(value: string): string {
+  if (!value) return "";
+
+  return value
+    .split(/(\([^)]*\))/g) // split but keep bracketed parts
+    .map(part => {
+      // If part is inside brackets, return as-is
+      if (part.startsWith("(") && part.endsWith(")")) {
+        return part;
+      }
+
+      // Title-case only non-bracket text
+      return part
+        .toLowerCase()
+        .replace(/\b\w/g, char => char.toUpperCase());
+    })
+    .join("");
+}
+
 interface Student {
   id: string;
   name: string;
@@ -494,10 +513,21 @@ const ReportCards = () => {
       if (printWindow) {
         const htmlContent = generateReportCardHTML(data);
 
-        printWindow.document.write(`
+        // Get academic year and class info for filename
+      const academicYear = academicYears.find(ay => ay.id === selectedAcademicYear)?.label || "Academic Year";
+      const department = departments.find(d => d.id === selectedDepartment)?.name || "Department";
+      const levelInfo = levels.find(l => l.id === selectedLevel);
+      const levelName = levelInfo?.name || "Level";
+      const levelId = levelInfo?.id || selectedLevel || "ID";
+      const className = `${department}_${levelName}_${levelId}`;
+      
+      // Replace all spaces with underscores for filename
+      const fileName = `Report_Card_${data.student_name.replace(/\s+/g, '_')}_${className.replace(/\s+/g, '_')}_${academicYear.replace(/\s+/g, '_')}`;
+      
+      printWindow.document.write(`
           <html>
             <head>
-              <title>Report Card - ${data.student_name}</title>
+              <title>${fileName}</title>
               <style>
                 ${getPrintStyles()}
               </style>
@@ -728,10 +758,21 @@ const ReportCards = () => {
           })
           .join("");
 
-        printWindow.document.write(`
+        // Get academic year and department/level info for filename
+      const academicYear = academicYears.find(ay => ay.id === selectedAcademicYear)?.label || "Academic Year";
+      const department = departments.find(d => d.id === selectedDepartment)?.name || "Department";
+      const levelInfo = levels.find(l => l.id === selectedLevel);
+      const levelName = levelInfo?.name || "Level";
+      const levelId = levelInfo?.id || selectedLevel || "ID";
+      const className = `${department}_${levelName}_${levelId}`;
+      
+      // Replace all spaces with underscores for filename
+      const fileName = `Report_Cards_${academicYear.replace(/\s+/g, '_')}_${className.replace(/\s+/g, '_')}`;
+      
+      printWindow.document.write(`
           <html>
             <head>
-              <title>Bulk Report Cards</title>
+              <title>${fileName}</title>
               <style>
                 ${getPrintStyles()}
                 .page-break { page-break-before: always; }
@@ -1264,7 +1305,7 @@ const ReportCards = () => {
                 <SelectContent>
                   {academicYears.map((year) => (
                     <SelectItem key={year.id} value={year.id}>
-                      {year.label} {year.is_active && "(Current)"}
+                      {toTitleCase(year.label)} {year.is_active && "(Current)"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1279,7 +1320,7 @@ const ReportCards = () => {
                 <SelectContent>
                   {terms.map((term) => (
                     <SelectItem key={term.id} value={term.id}>
-                      {term.label} {term.is_active && "(Current)"}
+                      {toTitleCase(term.label)} {term.is_active && "(Current)"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1297,7 +1338,7 @@ const ReportCards = () => {
                 <SelectContent>
                   {departments.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
+                      {toTitleCase(dept.name)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1312,7 +1353,7 @@ const ReportCards = () => {
                 <SelectContent>
                   {levels.map((level) => (
                     <SelectItem key={level.id} value={level.id.toString()}>
-                      Level {level.name}
+                      Level {toTitleCase(level.name)}
                     </SelectItem>
                   ))}
                 </SelectContent>

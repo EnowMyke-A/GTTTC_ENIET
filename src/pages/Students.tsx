@@ -80,6 +80,25 @@ interface AcademicYear {
   label: string;
 }
 
+function toTitleCase(value: string): string {
+  if (!value) return "";
+
+  return value
+    .split(/(\([^)]*\))/g) // split but keep bracketed parts
+    .map(part => {
+      // If part is inside brackets, return as-is
+      if (part.startsWith("(") && part.endsWith(")")) {
+        return part;
+      }
+
+      // Title-case only non-bracket text
+      return part
+        .toLowerCase()
+        .replace(/\b\w/g, char => char.toUpperCase());
+    })
+    .join("");
+}
+
 const Students = () => {
   const [classStudents, setClassStudents] = useState<ClassStudent[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
@@ -588,8 +607,8 @@ const Students = () => {
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Male">Male</SelectItem>
-                          <SelectItem value="Female">Female</SelectItem>
+                          <SelectItem value="Male">{toTitleCase("Male")}</SelectItem>
+                          <SelectItem value="Female">{toTitleCase("Female")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -636,7 +655,7 @@ const Students = () => {
                         <SelectContent>
                           {departments.map((dept) => (
                             <SelectItem key={dept.id} value={dept.id}>
-                              {dept.name}
+                              {toTitleCase(dept.name)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -664,7 +683,7 @@ const Students = () => {
                         <SelectContent>
                           {levels.map((level) => (
                             <SelectItem key={level.id} value={level.id.toString()}>
-                              Level {level.name}
+                              Level {toTitleCase(level.name)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -815,7 +834,7 @@ const Students = () => {
                 <SelectItem value="all">All Departments</SelectItem>
                 {departments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
-                    {dept.name}
+                    {toTitleCase(dept.name)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -829,7 +848,7 @@ const Students = () => {
                 <SelectItem value="all">All Levels</SelectItem>
                 {levels.map((level) => (
                   <SelectItem key={level.id} value={level.id.toString()}>
-                    Level {level.name}
+                    Level {toTitleCase(level.name)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -846,7 +865,7 @@ const Students = () => {
                 <SelectItem value="all">All Years</SelectItem>
                 {academicYears.map((year) => (
                   <SelectItem key={year.id} value={year.id}>
-                    {year.label}{activeAcademicYear?.id === year.id ? " (current)" : ""}
+                    {toTitleCase(year.label)}{activeAcademicYear?.id === year.id ? " (current)" : ""}
                   </SelectItem>
                 ))}
               </SelectContent>

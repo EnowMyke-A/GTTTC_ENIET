@@ -16,6 +16,7 @@ import Discipline from "@/pages/Discipline";
 import Notifications from "@/pages/Notifications";
 import NotFound from "@/pages/NotFound";
 import Marks from "@/pages/Marks";
+import Council from "@/pages/Council";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => (
   <div className="min-h-screen bg-background">
@@ -146,6 +147,17 @@ export const AdminApp = () => {
           <AdminLayout>
             <Suspense fallback={<LoadingOverlay message="Loading marks..." size="xl" />}>
               <Marks />
+            </Suspense>
+          </AdminLayout>
+        }
+      />
+      <Route path="*" element={<NotFound />} />
+      <Route
+        path="/class-council"
+        element={
+          <AdminLayout>
+            <Suspense fallback={<LoadingOverlay message="Loading..." size="xl" />}>
+              <Council />
             </Suspense>
           </AdminLayout>
         }

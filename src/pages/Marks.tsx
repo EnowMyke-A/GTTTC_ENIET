@@ -68,6 +68,7 @@ interface Course {
   level_id: number;
   department_id: string;
   coefficient: number;
+  level?: Level;
 }
 
 interface Term {
@@ -89,6 +90,11 @@ interface Lecturer {
   course_id: string;
 }
 
+interface Level {
+  id: number;
+  name: string;
+}
+
 interface EditingCell {
   studentId: string;
   field: "ca_score" | "exam_score";
@@ -102,6 +108,25 @@ interface StudentMark {
   mark_id?: string;
 }
 
+function toTitleCase(value: string): string {
+  if (!value) return "";
+
+  return value
+    .split(/(\([^)]*\))/g) // split but keep bracketed parts
+    .map(part => {
+      // If part is inside brackets, return as-is
+      if (part.startsWith("(") && part.endsWith(")")) {
+        return part;
+      }
+
+      // Title-case only non-bracket text
+      return part
+        .toLowerCase()
+        .replace(/\b\w/g, char => char.toUpperCase());
+    })
+    .join("");
+}
+
 const Marks = () => {
   const { userRole, user } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
@@ -109,6 +134,7 @@ const Marks = () => {
   const [terms, setTerms] = useState<Term[]>([]);
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [lecturers, setLecturers] = useState<Lecturer[]>([]);
+  const [levels, setLevels] = useState<Level[]>([]);
   const [studentMarks, setStudentMarks] = useState<StudentMark[]>([]);
 
   // Filters
@@ -181,8 +207,24 @@ const Marks = () => {
 
       setAcademicYears(academicYearsData || []);
 
-      // Get courses and lecturers
-      let coursesQuery = supabase.from("courses").select("*").order("name");
+      // Get levels
+      const { data: levelsData, error: levelsError } = await supabase
+        .from("levels")
+        .select("*")
+        .order("id");
+      if (levelsError) throw levelsError;
+
+      // Get courses and lecturers with level information
+      let coursesQuery = supabase
+        .from("courses")
+        .select(`
+          *,
+          levels (
+            id,
+            name
+          )
+        `)
+        .order("name");
       let lecturersQuery = supabase.from("lecturers").select("*");
 
       if (userRole === "lecturer" && user) {
@@ -202,6 +244,7 @@ const Marks = () => {
 
       setCourses(coursesData);
       setLecturers(lecturersData);
+      setLevels(levelsData || []);
 
       // For lecturers, auto-select their course if they have only one
       if (userRole === "lecturer" && lecturersData.length === 1) {
@@ -611,7 +654,7 @@ const Marks = () => {
                 <SelectContent>
                   {academicYears.map((year) => (
                     <SelectItem key={year.id} value={year.id}>
-                      {year.label} {year.is_active && "(Current)"}
+                      {toTitleCase(year.label)} {year.is_active && "(Current)"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -636,7 +679,7 @@ const Marks = () => {
                   )}
                   {terms.map((term) => (
                     <SelectItem key={term.id} value={term.id}>
-                      {term.label} {term.is_active && "(Current)"}
+                      {toTitleCase(term.label)} {term.is_active && "(Current)"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -651,8 +694,8 @@ const Marks = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {availableCourses.map((course) => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.name}
+                    <SelectItem key={course.id} value={course.id} className="w-[100%]">
+                      <p className="flex items-center justify-between w-[100%]"><span>{toTitleCase(course.name)}</span><span>{`Year ${course.levels?.name}` || `Year ${course.level_id}`}</span></p>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -666,7 +709,7 @@ const Marks = () => {
                 variant="secondary"
                 className="bg-muted hover:bg-accent/30"
               >
-                Level {selectedCourseData.level_id}
+                {selectedCourseData.levels?.name || `Level ${selectedCourseData.level_id}`}
               </Badge>
               <Badge
                 variant="outline"
