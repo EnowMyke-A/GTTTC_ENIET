@@ -39,6 +39,7 @@ import {
   BookOpen,
   GraduationCap,
   FileSpreadsheet,
+  FileDown,
   Calendar,
   Building2,
   AlertCircle,
@@ -94,6 +95,7 @@ const Analytics = () => {
   const [loading, setLoading] = useState(true);
   const [fetchingStats, setFetchingStats] = useState(false);
   const [downloadingExcel, setDownloadingExcel] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
   const { toast } = useToast();
 
   const COLORS = [
@@ -412,6 +414,275 @@ const Analytics = () => {
     }
   };
 
+  const downloadPDFSummary = async () => {
+    if (!selectedAcademicYear || !selectedTerm) {
+      toast.error("Please select academic year and term");
+      return;
+    }
+
+    try {
+      setDownloadingPDF(true);
+
+      // Get the selected term label
+      const selectedTermData = terms.find(t => t.id === selectedTerm);
+      const termLabel = selectedTermData?.label || '';
+
+      // Create printable content
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Summary Statistics - ${termLabel}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+              font-family: 'Times New Roman', serif; 
+              font-size: 12px; 
+              line-height: 1.4;
+              color: #333;
+              max-width: 100%;
+              margin: 20px;
+            }
+            .header { 
+              text-align: center; 
+              margin-bottom: 30px; 
+              border-bottom: 2px solid #06553A;
+              padding-bottom: 15px;
+            }
+            .title { 
+              font-size: 18px; 
+              font-weight: bold; 
+              margin-bottom: 5px;
+              text-transform: uppercase;
+            }
+            .institution { 
+              font-size: 14px; 
+              margin-bottom: 10px;
+              font-weight: bold;
+            }
+            .info { 
+              font-size: 12px; 
+              margin-bottom: 20px;
+            }
+            .section { 
+              margin-bottom: 25px; 
+              page-break-inside: avoid;
+            }
+            .section-title { 
+              font-size: 14px; 
+              font-weight: bold; 
+              margin-bottom: 10px;
+              color: #06553A;
+              border-bottom: 1px solid #ddd;
+              padding-bottom: 5px;
+            }
+            .stats-grid { 
+              display: grid; 
+              grid-template-columns: repeat(3, 1fr); 
+              gap: 20px; 
+              margin-bottom: 20px;
+            }
+            .stat-card { 
+              border: 1px solid #ddd; 
+              padding: 15px; 
+              border-radius: 5px;
+              background: #f9f9f9;
+            }
+            .stat-title { 
+              font-weight: bold; 
+              margin-bottom: 8px; 
+              color: #06553A;
+            }
+            .stat-item { 
+              display: flex; 
+              justify-content: space-between; 
+              margin-bottom: 5px;
+            }
+            .stat-value { 
+              font-weight: bold; 
+              color: #333;
+            }
+            .list-item { 
+              display: flex; 
+              justify-content: space-between; 
+              padding: 8px 0;
+              border-bottom: 1px solid #eee;
+            }
+            .highlight { 
+              background: #f0f8f0; 
+              padding: 2px 6px;
+              border-radius: 3px;
+            }
+            @media print {
+              body { margin: 10px; }
+              .section { page-break-inside: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">${termLabel} Term Results Summary Statistics</div>
+            <div class="institution">GTTTC KUMBA</div>
+            <div class="info">
+              Academic Year: ${analytics.summaryDocument?.header?.academicYear || 'N/A'} | 
+              Department: ${analytics.summaryDocument?.header?.department || 'All Departments'} | 
+              Level: ${analytics.summaryDocument?.header?.level || 'All Levels'}
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Enrollment Overview</div>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-title">Total Enrolled</div>
+                <div class="stat-item">
+                  <span>Students:</span>
+                  <span class="stat-value">${analytics.enrollmentStats?.enrolled?.total || 0}</span>
+                </div>
+                <div class="stat-item">
+                  <span>Boys:</span>
+                  <span class="stat-value">${analytics.enrollmentStats?.enrolled?.boys || 0}</span>
+                </div>
+                <div class="stat-item">
+                  <span>Girls:</span>
+                  <span class="stat-value">${analytics.enrollmentStats?.enrolled?.girls || 0}</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Sat for Exams</div>
+                <div class="stat-item">
+                  <span>Students:</span>
+                  <span class="stat-value">${analytics.enrollmentStats?.satForExams?.total || 0}</span>
+                </div>
+                <div class="stat-item">
+                  <span>Percentage:</span>
+                  <span class="stat-value">${analytics.enrollmentStats?.satForExams?.percentage || 0}%</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Pass Rate Overview</div>
+                <div class="stat-item">
+                  <span>Total Passed:</span>
+                  <span class="stat-value highlight">${analytics.passFailStats?.passed?.total || 0}</span>
+                </div>
+                <div class="stat-item">
+                  <span>Overall Pass Rate:</span>
+                  <span class="stat-value highlight">${analytics.passFailStats?.passed?.percentageTotal || 0}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Gender-Specific Pass Statistics</div>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-title">Boys Performance</div>
+                <div class="stat-item">
+                  <span>Passed:</span>
+                  <span class="stat-value">${analytics.passFailStats?.passed?.boys || 0}</span>
+                </div>
+                <div class="stat-item">
+                  <span>Failed:</span>
+                  <span class="stat-value">${analytics.passFailStats?.failed?.boys || 0}</span>
+                </div>
+                <div class="stat-item">
+                  <span>Pass Rate:</span>
+                  <span class="stat-value highlight">${analytics.passFailStats?.passed?.boys ? ((analytics.passFailStats.passed.boys / (analytics.passFailStats.passed.boys + analytics.passFailStats.failed.boys)) * 100).toFixed(1) : 0}%</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-title">Girls Performance</div>
+                <div class="stat-item">
+                  <span>Passed:</span>
+                  <span class="stat-value">${analytics.passFailStats?.passed?.girls || 0}</span>
+                </div>
+                <div class="stat-item">
+                  <span>Failed:</span>
+                  <span class="stat-value">${analytics.passFailStats?.failed?.girls || 0}</span>
+                </div>
+                <div class="stat-item">
+                  <span>Pass Rate:</span>
+                  <span class="stat-value highlight">${analytics.passFailStats?.passed?.girls ? ((analytics.passFailStats.passed.girls / (analytics.passFailStats.passed.girls + analytics.passFailStats.failed.girls)) * 100).toFixed(1) : 0}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Top Performing Courses</div>
+            ${analytics.top3Courses?.map((course, index) => `
+              <div class="list-item">
+                <span>${index + 1}. ${course.name} (${course.level})</span>
+                <div>
+                  <span class="stat-value">${course.average}</span>
+                  <span class="highlight" style="margin-left: 10px; font-size: 11px;">${course.passRate}%</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="section">
+            <div class="section-title">Bottom Performing Courses</div>
+            ${analytics.bottom3Courses?.map((course, index) => `
+              <div class="list-item">
+                <span>${index + 1}. ${course.name} (${course.level})</span>
+                <div>
+                  <span class="stat-value">${course.average}</span>
+                  <span class="highlight" style="margin-left: 10px; font-size: 11px;">${course.passRate}%</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="section">
+            <div class="section-title">Top Performing Students</div>
+            ${analytics.top3Students?.map((student, index) => `
+              <div class="list-item">
+                <span>${index + 1}. ${student.name} (${student.gender}, ${student.department})</span>
+                <span class="stat-value highlight">${student.average}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="section">
+            <div class="section-title">Bottom Performing Students</div>
+            ${analytics.bottom3Students?.map((student, index) => `
+              <div class="list-item">
+                <span>${index + 1}. ${student.name} (${student.gender}, ${student.department})</span>
+                <span class="stat-value">${student.average}</span>
+              </div>
+            `).join('')}
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Create and trigger print
+      const blob = new Blob([printContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = url;
+      document.body.appendChild(iframe);
+      
+      iframe.onload = () => {
+        iframe.contentWindow?.print();
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          URL.revokeObjectURL(url);
+        }, 1000);
+      };
+
+      toast.success("PDF summary ready for printing!");
+    } catch (error: any) {
+      console.error('Error generating PDF:', error);
+      toast.error('Error generating PDF: ' + (error.message || 'Unknown error'));
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
   if (userRole !== "admin") {
     return (
       <div className="p-6 text-center">
@@ -474,7 +745,7 @@ const Analytics = () => {
 
   return (
     <div className="md:p-4 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-end justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-muted-foreground/85">
             Statistics
@@ -484,14 +755,25 @@ const Analytics = () => {
           </p>
         </div>
         {analytics && (
-          <Button
-            onClick={downloadExcelSummary}
-            disabled={downloadingExcel || !selectedAcademicYear || !selectedTerm}
-            className="flex items-center gap-2"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            {downloadingExcel ? "Downloading..." : "Download Excel Summary"}
-          </Button>
+          <div className="flex gap-3">
+             <Button
+              onClick={downloadPDFSummary}
+              disabled={downloadingPDF || !selectedAcademicYear || !selectedTerm}
+              className="flex items-center gap-2 bg-muted text-primary hover:bg-accent/30 min-w-[140px]"
+              variant="outline"
+            >
+              <FileDown className="h-4 w-4" />
+              {downloadingPDF ? "Generating PDF..." : "Download PDF Summary"}
+            </Button>
+            <Button
+              onClick={downloadExcelSummary}
+              disabled={downloadingExcel || !selectedAcademicYear || !selectedTerm}
+              className="flex items-center gap-2"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              {downloadingExcel ? "Downloading Excel File..." : "Download Excel Statistics"}
+            </Button>   
+          </div>
         )}
       </div>
 
