@@ -377,16 +377,45 @@ const Students = () => {
   const deleteStudent = async (id: string) => {
     setDeleting(true);
     try {
-      const { error } = await supabase
+      // First get the student_id from class_students
+      const { data: classStudentData, error: fetchError } = await supabase
+        .from("class_students")
+        .select("student_id")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!classStudentData?.student_id) throw new Error("Student not found");
+
+      const studentId = classStudentData.student_id;
+
+      // Delete from class_students table
+      const { error: classError } = await supabase
         .from("class_students")
         .delete()
-        .eq("id", id);
+        .eq("student_id", studentId);
 
-      if (error) throw error;
+      if (classError) throw classError;
+
+      // Delete from marks table
+      const { error: marksError } = await supabase
+        .from("marks")
+        .delete()
+        .eq("student_id", studentId);
+
+      if (marksError) throw marksError;
+
+      // Delete from students table (this will cascade delete the student's photo if storage cleanup is set up)
+      const { error: studentError } = await supabase
+        .from("students")
+        .delete()
+        .eq("id", studentId);
+
+      if (studentError) throw studentError;
 
       toast({
         title: "Success",
-        description: "Student removed from class successfully",
+        description: "Student deleted permanently",
       });
 
       fetchData();

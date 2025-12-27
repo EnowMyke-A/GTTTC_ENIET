@@ -61,6 +61,12 @@ interface Student {
   department_id: string;
 }
 
+interface Department {
+  id: string;
+  name: string;
+  abbreviation: string;
+}
+
 interface Course {
   id: string;
   name: string;
@@ -106,6 +112,7 @@ interface StudentMark {
   ca_score: number | null;
   exam_score: number | null;
   mark_id?: string;
+  student_department_id: string;
 }
 
 function toTitleCase(value: string): string {
@@ -135,6 +142,7 @@ const Marks = () => {
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [lecturers, setLecturers] = useState<Lecturer[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [studentMarks, setStudentMarks] = useState<StudentMark[]>([]);
 
   // Filters
@@ -151,6 +159,7 @@ const Marks = () => {
   // Search and sort states
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
 
   useEffect(() => {
     fetchInitialData();
@@ -214,6 +223,13 @@ const Marks = () => {
         .order("id");
       if (levelsError) throw levelsError;
 
+      // Get departments
+      const { data: departmentsData, error: departmentsError } = await supabase
+        .from("departments")
+        .select("*")
+        .order("name");
+      if (departmentsError) throw departmentsError;
+
       // Get courses and lecturers with level information
       let coursesQuery = supabase
         .from("courses")
@@ -245,6 +261,7 @@ const Marks = () => {
       setCourses(coursesData);
       setLecturers(lecturersData);
       setLevels(levelsData || []);
+      setDepartments(departmentsData || []);
 
       // For lecturers, auto-select their course if they have only one
       if (userRole === "lecturer" && lecturersData.length === 1) {
@@ -529,6 +546,13 @@ const Marks = () => {
       );
     }
 
+    // Apply department filter
+    if (selectedDepartment !== "all") {
+      filtered = filtered.filter((student) =>
+        student.student_department_id === selectedDepartment
+      );
+    }
+
     // Apply sorting
     return filtered.sort((a, b) => {
       const nameA = a.student_name.toLowerCase();
@@ -540,7 +564,7 @@ const Marks = () => {
         return nameB.localeCompare(nameA);
       }
     });
-  }, [studentMarks, searchQuery, sortOrder]);
+  }, [studentMarks, searchQuery, sortOrder, selectedDepartment]);
 
   // Filter courses for lecturers
   const availableCourses =
@@ -551,6 +575,37 @@ const Marks = () => {
       : courses;
 
   const selectedCourseData = courses.find((c) => c.id === selectedCourse);
+
+  // Get departments associated with the selected course
+  const availableDepartments = React.useMemo(() => {
+    if (!selectedCourse) {
+      return departments;
+    }
+    
+    // Find students enrolled in this course and get their departments
+    const courseStudentDepartments = new Set(
+      studentMarks
+        .map(student => student.student_department_id)
+        .filter(deptId => deptId) // Filter out null/undefined
+    );
+    
+    // Return departments that have students in this course
+    return departments.filter(dept => courseStudentDepartments.has(dept.id));
+  }, [selectedCourse, studentMarks, departments]);
+
+  // Auto-select department when course changes or when only one department is available
+  React.useEffect(() => {
+    if (selectedCourse && availableDepartments.length === 1) {
+      // Auto-select the single department
+      setSelectedDepartment(availableDepartments[0].id);
+    } else if (selectedCourse && availableDepartments.length > 1) {
+      // Reset to "all" when multiple departments are available
+      setSelectedDepartment("all");
+    } else if (!selectedCourse) {
+      // Reset to "all" when no course is selected
+      setSelectedDepartment("all");
+    }
+  }, [selectedCourse, availableDepartments]);
 
   // Check if current selection is active (for lecturers)
   const isActiveSelection = React.useMemo(() => {
@@ -692,10 +747,10 @@ const Marks = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Select course" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="w-[100%]">
                   {availableCourses.map((course) => (
                     <SelectItem key={course.id} value={course.id} className="w-[100%]">
-                      <p className="flex items-center justify-between w-[100%]"><span>{toTitleCase(course.name)}</span><span>{`Year ${course.levels?.name}` || `Year ${course.level_id}`}</span></p>
+                      <p className="flex items-center justify-between gap-2 w-[100%]"><span>{toTitleCase(course.name)}</span><span>-</span><span>{`L${course.levels?.name}` || `L${course.level_id}`}</span></p>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -745,14 +800,33 @@ const Marks = () => {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between pb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 h-4 w-4" />
-                <Input
-                  placeholder="Search students..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 search-input"
-                />
+              <div className="flex flex-col sm:flex-row gap-2 flex-1">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 h-4 w-4" />
+                  <Input
+                    placeholder="Search students..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 search-input"
+                  />
+                </div>
+                <div className="w-full sm:w-48">
+                  <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                    <SelectTrigger className="text-muted-foreground/80">
+                      <SelectValue placeholder="Filter by department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableDepartments.length > 1 && (
+                        <SelectItem value="all">All Departments</SelectItem>
+                      )}
+                      {availableDepartments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {toTitleCase(dept.name)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -846,7 +920,7 @@ const Marks = () => {
                                 )
                               }
                             >
-                              {studentMark.ca_score || "-"}
+                              {studentMark.ca_score !== null && studentMark.ca_score !== undefined ? studentMark.ca_score : "-"}
                             </div>
                           )}
                         </TableCell>
@@ -882,7 +956,7 @@ const Marks = () => {
                                 )
                               }
                             >
-                              {studentMark.exam_score || "-"}
+                              {studentMark.exam_score !== null && studentMark.exam_score !== undefined ? studentMark.exam_score : "-"}
                             </div>
                           )}
                         </TableCell>

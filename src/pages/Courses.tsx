@@ -264,12 +264,41 @@ const Courses = () => {
   const deleteCourse = async (id: string) => {
     setDeleting(true);
     try {
-      const { error } = await supabase.from("courses").delete().eq("id", id);
-      if (error) throw error;
+      // Delete from lecturer_courses table first (no cascade dependencies)
+      const { error: lecturerCoursesError } = await supabase
+        .from("lecturer_courses")
+        .delete()
+        .eq("course_id", id);
+
+      if (lecturerCoursesError) throw lecturerCoursesError;
+
+      // Delete from marks table (references course_id)
+      const { error: marksError } = await supabase
+        .from("marks")
+        .delete()
+        .eq("course_id", id);
+
+      if (marksError) throw marksError;
+
+      // Delete from course_departments table (references course_id)
+      const { error: courseDepartmentsError } = await supabase
+        .from("course_departments")
+        .delete()
+        .eq("course_id", id);
+
+      if (courseDepartmentsError) throw courseDepartmentsError;
+
+      // Finally delete from courses table
+      const { error: courseError } = await supabase
+        .from("courses")
+        .delete()
+        .eq("id", id);
+
+      if (courseError) throw courseError;
 
       toast({
         title: "Success",
-        description: "Course deleted successfully",
+        description: "Course and all related data deleted successfully",
       });
       fetchData();
     } catch (error: any) {

@@ -176,7 +176,9 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
 
     /* Subjects table styling */
     .report-card table.subjects-table tbody tr td {
-        height: 32px !important;
+        height: 28px !important;
+        padding: 0 !important;
+        padding-left: 5px !important;
     }
 
     /* Watermark styling */
@@ -223,9 +225,9 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
         border-bottom: 2px solid #000;
         padding-bottom: 2px;
         display: flex;
-        justify-content: space-between;
+        justify-content: space-around;
         flex-wrap: nowrap;
-        align-items: start;
+        align-items: center;
     }
 
     /* Ensure the individual header sections are sized correctly for the layout */
@@ -261,7 +263,6 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
         padding: 0;
         margin: auto;
         width: 98%;
-        margin-bottom: 10px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -445,6 +446,13 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
         padding: 2px !important;
         padding-top: 5px !important;
       }
+
+      .report-card table.subjects-table tbody tr td {
+        height: 28px !important;
+        padding: 0 !important;
+        padding-left: 5px !important;
+        font-size: 11px;
+    }
     }
 
   `;
@@ -487,13 +495,13 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
         {/* HEADER */}
         <div className="header">
           {/* English Side */}
-          <div className="english-header" style={{ width: "300px" }}>
-            <h1 style={{ fontSize: "14px" }}>Republic of Cameroon</h1>
-            <h2>Peace – Work – Fatherland</h2>
-            <h2 style={{ textTransform: "uppercase", fontSize: "12px" }}>
+          <div className="english-header" style={{ width: "calc(100% / 2.5)" }}>
+            <h1 style={{ fontSize: `${data.subjects?.length>20?13:14}px`}}>Republic of Cameroon</h1>
+            <h2 style={{fontSize: `${data.subjects?.length>20?11:12}px`}}>Peace – Work – Fatherland</h2>
+            <h2 style={{ textTransform: "uppercase", fontSize: `${data.subjects?.length>20?11:12}px` }}>
               Ministry of Secondary Education
             </h2>
-            <h2 style={{ textTransform: "uppercase", fontSize: "12px" }}>
+            <h2 style={{ textTransform: "uppercase", fontSize: `${data.subjects?.length>20?11:12}px` }}>
               Government Technical Teacher Training College (G.T.T.T.C) Kumba
             </h2>
           </div>
@@ -501,8 +509,8 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
           {/* Center Logo — now using inline <img> with base64 */}
           <div
             style={{
-              width: "90px",
-              height: "90px",
+              width: `${data.subjects?.length>20?80:90}px`,
+              height: `${data.subjects?.length>20?80:90}px`,
               display: "flex",
               alignItems: "start",
               justifyContent: "center",
@@ -521,32 +529,32 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
           </div>
 
           {/* French Side */}
-          <div className="french-header" style={{ width: "300px" }}>
-            <h1 style={{ fontSize: "14px" }}>République du Cameroun</h1>
-            <h2>Paix – Travail – Patrie</h2>
-            <h2 style={{ textTransform: "uppercase", fontSize: "12px" }}>
+          <div className="french-header" style={{ width: "calc(100% / 2.5)" }}>
+            <h1 style={{ fontSize: `${data.subjects?.length>20?13:14}px`}}>République du Cameroun</h1>
+            <h2 style={{fontSize: `${data.subjects?.length>20?11:12}px`}}>Paix – Travail – Patrie</h2>
+            <h2 style={{ textTransform: "uppercase", fontSize: `${data.subjects?.length>20?11:12}px` }}>
               Ministère des Enseignements Secondaires
             </h2>
-            <h2 style={{ textTransform: "uppercase", fontSize: "12px" }}>
+            <h2 style={{ textTransform: "uppercase", fontSize: `${data.subjects?.length>20?11:12}px` }}>
               ECOLE NORMALE D'INSTITUTEURS DE L'ENSEIGNEMENT TECHNIQUE
               (E.N.I.E.T) DE KUMBA
             </h2>
           </div>
         </div>
 
-        <div className="term-title">
+        <div className="term-title" style={{margin: `${data.subjects?.length>20?5:10}px 0`}}>
           {data.term} Term Academic Report Card {data.academic_year}
         </div>
 
         {/* STUDENT INFO */}
-        <div className="student-box">
+        <div className="student-box" style={{marginBottom:`${data.subjects?.length>18?5:10}px`}}>
           <div
             className="student-details"
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr",
               gap:"0",
-              border: "2px solid #000000dc ",
+              border: `${data.subjects?.length>20?1.5:2}px solid #000000dc`,
               fontSize: "14px",
               width: "100%",
             }}
@@ -555,8 +563,8 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
             <div
               style={{
                 gridColumn: "span 5",
-                borderBottom: "2px solid #000000dc ",
-                padding: "3px 6px",
+                borderBottom: `${data.subjects?.length>20?1.5:2}px solid #000000dc`,
+                padding: `${data.subjects?.length>20?0:3}px 6px`,
               }}
             >
               <span style={{fontWeight: "500"}}>Name of Student:</span>&nbsp;&nbsp;&nbsp;<strong style={{fontSize:"12px", letterSpacing:"1px"}}>{data.student_name}</strong> 
@@ -564,10 +572,10 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
 
             <div
               style={{
-                borderLeft: "2px solid #000000dc ",
+                borderLeft: `${data.subjects?.length>20?1.5:2}px solid #000000dc`,
                 gridColumn: "span 1",
-                borderBottom: "2px solid #000000dc ",
-                padding: "3px 6px",
+                borderBottom: `${data.subjects?.length>20?1.5:2}px solid #000000dc`,
+                padding: `${data.subjects?.length>20?0:3}px 6px`,
               }}  
             >
               <strong>Class:</strong>&nbsp;&nbsp;&nbsp;{data.department}
@@ -577,15 +585,15 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
             </div>
 
             {/* ROW 2 */}
-            <div style={{ borderBottom: "2px solid #000000dc ", padding: "3px 6px", gridColumn: "span 4", }}>
+            <div style={{ borderBottom: `${data.subjects?.length>20?1.5:2}px solid #000000dc`, padding: `${data.subjects?.length>20?0:3}px 6px`, gridColumn: "span 4", }}>
               <span style={{fontWeight: "500"}}>Date and Place of Birth:</span>&nbsp;&nbsp;&nbsp;{data.dob}&nbsp;<b>at</b>&nbsp;{data.pob}
             </div>
 
             <div
               style={{
-                borderLeft: "2px solid #000000dc ",
-                borderBottom: "2px solid #000000dc ",
-                padding: "3px 6px",
+                borderLeft: `${data.subjects?.length>20?1.5:2}px solid #000000dc`,
+                borderBottom: `${data.subjects?.length>20?1.5:2}px solid #000000dc`,
+                padding: `${data.subjects?.length>20?0:3}px 6px`,
               }}
             >
               <span style={{fontWeight: "500"}}>Gender:</span>&nbsp;&nbsp;&nbsp;{data.gender}
@@ -593,28 +601,28 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
 
             <div
               style={{
-                borderLeft: "2px solid #000000dc ",
-                borderBottom: "2px solid #000000dc ",
-                padding: "3px 6px",
+                borderLeft: `${data.subjects?.length>20?1.5:2}px solid #000000dc`,
+                borderBottom: `${data.subjects?.length>20?1.5:2}px solid #000000dc`,
+                padding: `${data.subjects?.length>20?0:3}px 6px`,
               }}
             >
               <span style={{fontWeight: "500"}}>Repeater:</span>&nbsp;&nbsp;&nbsp;{data.repeater}
             </div>
 
             {/* ROW 3 */}
-            <div style={{ padding: "3px 6px", gridColumn: "span 2" }}>
+            <div style={{ padding: `${data.subjects?.length>20?0:3}px 6px`, gridColumn: "span 2" }}>
               <span style={{fontWeight: "500"}}>Matricule:</span>&nbsp;&nbsp;&nbsp;{data.student_id}
             </div>
 
-            <div style={{ borderLeft: "2px solid #000000dc ", padding: "3px 6px" }}>
+            <div style={{ borderLeft: `${data.subjects?.length>20?1.5:2}px solid #000000dc`, padding: `${data.subjects?.length>20?0:3}px 6px` }}>
               <span style={{fontWeight: "500"}}>Subjects:</span>&nbsp;&nbsp;&nbsp;{data.num_subjects}
             </div>
 
-            <div style={{ borderLeft: "2px solid #000000dc ", padding: "3px 6px" }}>
+            <div style={{ borderLeft: `${data.subjects?.length>20?1.5:2}px solid #000000dc`, padding: `${data.subjects?.length>20?0:3}px 6px` }}>
               <span style={{fontWeight: "500"}}>Subj. Passed:</span>&nbsp;&nbsp;&nbsp;{data.num_passed}
             </div>
 
-            <div style={{ borderLeft: "2px solid #000000dc ", padding: "3px 6px", gridColumn: "span 2"  }}>
+            <div style={{ borderLeft: `${data.subjects?.length>20?1.5:2}px solid #000000dc`, padding: `${data.subjects?.length>20?0:3}px 6px`, gridColumn: "span 2"  }}>
               <span style={{fontWeight: "500"}}>Class Master:</span>&nbsp;&nbsp;&nbsp;{data.class_master}
             </div>
           </div>
@@ -622,8 +630,8 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
           <div
             className="student-photo"
             style={{
-              width: "70px",
-              height: "70px",
+              width: `${data.subjects?.length>20?55:75}px`,
+              height: `${data.subjects?.length>20?55:75}px`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -685,8 +693,8 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                     fontWeight: "500",
                   }}
                 >
-                  {toTitleCase(subject.subject)} <br />{" "}
-                  <span style={{ fontSize: "9px", fontWeight: "400", display: "block", marginTop: "-1px", textTransform: "uppercase" }}>
+                  {subject.subject} <br />{" "}
+                  <span style={{ fontSize: "8px", fontWeight: "400", display: "block", marginTop: "-1px", textTransform: "uppercase" }}>
                     {toTitleCase(subject.teacher)}
                   </span>
                 </td>
@@ -1157,18 +1165,18 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
           >
             <tr>
               {/* Remark Column */}
-              <td style={{ padding: "10px", width: "25%", fontWeight: "bold", fontSize: "15px", textAlign: "center" , verticalAlign: "center", color:getAcademicPerformanceRemark(data)=="FAILED" ? "#FF0000" : "#0D1C12D9"}}>
+              <td style={{ padding: `${(20 - data.subjects?.length)*6 + 10}px`, width: "25%", fontWeight: "bold", fontSize: `${data.subjects?.length>18?12:14}px`, textAlign: "center" , verticalAlign: "center", color:`${getAcademicPerformanceRemark(data)=="FAILED"?"#FF0000":"#0D1C12D9"}`}}>
                 {getAcademicPerformanceRemark(data)}
               </td>
 
               {/* Parent Signature Column */}
-              <td style={{ padding: "25px", width: "25%" }}></td>
+              <td style={{ padding: "5px", width: "25%" }}></td>
 
               {/* Class Master's Signature Column */}
-              <td style={{ padding: "25px", width: "25%" }}></td>
+              <td style={{ padding: "10px", width: "25%" }}></td>
 
               {/* Principal's Column */}
-              <td style={{ padding: "25px", width: "25%" }}></td>
+              <td style={{ padding: "10px", width: "25%" }}></td>
             </tr>
           </tbody>
         </table>

@@ -130,10 +130,10 @@ Deno.serve(async (req) => {
         student_id: student.id,
         student_name: student.name,
         student_matricule: student.matricule,
-        ca_score: existingMark?.ca_score || null,
-        exam_score: existingMark?.exam_score || null,
-        total_score: existingMark?.total_score || null,
-        grade: existingMark?.grade || null,
+        ca_score: existingMark?.ca_score !== undefined ? existingMark.ca_score : null,
+        exam_score: existingMark?.exam_score !== undefined ? existingMark.exam_score : null,
+        total_score: existingMark?.total_score !== undefined ? existingMark.total_score : null,
+        grade: existingMark?.grade !== undefined ? existingMark.grade : null,
         mark_id: existingMark?.id,
       };
     });
