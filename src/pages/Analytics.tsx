@@ -370,6 +370,60 @@ const Analytics = () => {
         return;
       }
 
+      // Fetch course progress data from course_progress table
+      let progressDataMap = new Map();
+      try {
+        const { data: progressData, error: progressError } = await supabase
+          .from("course_progress")
+          .select(
+            `
+            *,
+            courses:course_id(name)
+          `
+          )
+          .eq("academic_year_id", selectedAcademicYear)
+          .eq("term_id", selectedTerm);
+
+        if (!progressError && progressData) {
+          progressData.forEach((progress: any) => {
+            const courseName = progress.courses?.name;
+            if (courseName) {
+              // Calculate percentages
+              const topicsPercentage =
+                progress.topics_planned && progress.topics_taught
+                  ? (
+                      (progress.topics_taught / progress.topics_planned) *
+                      100
+                    ).toFixed(1)
+                  : "0";
+              const periodsPercentage =
+                progress.periods_planned && progress.periods_taught
+                  ? (
+                      (progress.periods_taught / progress.periods_planned) *
+                      100
+                    ).toFixed(1)
+                  : "0";
+
+              progressDataMap.set(courseName, {
+                topics: {
+                  planned: progress.topics_planned?.toString() || "",
+                  taught: progress.topics_taught?.toString() || "",
+                  percentage: topicsPercentage,
+                },
+                periods: {
+                  planned: progress.periods_planned?.toString() || "",
+                  taught: progress.periods_taught?.toString() || "",
+                  percentage: periodsPercentage,
+                },
+              });
+            }
+          });
+        }
+      } catch (progressError) {
+        console.error("Error fetching course progress:", progressError);
+        // Continue without progress data if there's an error
+      }
+
       // Transform and combine data for Excel template
       const subjectMap = new Map();
 
@@ -401,6 +455,12 @@ const Analytics = () => {
           existing.totalEnrollmentSum += stat.enrollment?.total || 0;
         } else {
           // Create new subject entry
+          // Get progress data for this course if available
+          const courseProgress = progressDataMap.get(subjectName) || {
+            topics: { planned: "", taught: "", percentage: "" },
+            periods: { planned: "", taught: "", percentage: "" },
+          };
+
           subjectMap.set(subjectName, {
             subject: subjectName,
             enrollment: {
@@ -408,8 +468,8 @@ const Analytics = () => {
               girls: stat.enrollment?.girls || 0,
               total: stat.enrollment?.total || 0,
             },
-            topics: { planned: "", taught: "", percentage: "" },
-            periods: { planned: "", taught: "", percentage: "" },
+            topics: courseProgress.topics,
+            periods: courseProgress.periods,
             average: stat.classAverage || 0,
             passedGte10: {
               boys: stat.passedGte10?.boys || 0,
@@ -585,7 +645,7 @@ const Analytics = () => {
             }
             .stats-grid { 
               display: grid; 
-              grid-template-columns: repeat(3, 1fr); 
+              grid-template-columns: repeat(2, 1fr); 
               gap: 20px; 
               margin-bottom: 20px;
             }
@@ -696,6 +756,21 @@ const Analytics = () => {
                   }%</span>
                 </div>
               </div>
+              <div class="stat-card">
+                <div class="stat-title">Failed Rate Overview</div>
+                <div class="stat-item">
+                  <span>Total Failed:</span>
+                  <span class="stat-value" style="color: #ef4444;">${
+                    analytics.passFailStats?.failed?.total || 0
+                  }</span>
+                </div>
+                <div class="stat-item">
+                  <span>Overall Fail Rate:</span>
+                  <span class="stat-value" style="color: #ef4444;">${
+                    analytics.passFailStats?.failed?.percentageTotal || 0
+                  }%</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -769,10 +844,12 @@ const Analytics = () => {
               <div class="list-item">
                 <span>${index + 1}. ${course.name} (${course.level})</span>
                 <div>
-                  <span class="stat-value">${course.average}</span>
+                  <span class="stat-value">${
+                    course.average
+                  } avg score and</span>
                   <span class="highlight" style="margin-left: 10px; font-size: 11px;">${
                     course.passRate
-                  }%</span>
+                  }% pass rate</span>
                 </div>
               </div>
             `
@@ -788,10 +865,12 @@ const Analytics = () => {
               <div class="list-item">
                 <span>${index + 1}. ${course.name} (${course.level})</span>
                 <div>
-                  <span class="stat-value">${course.average}</span>
+                  <span class="stat-value">${
+                    course.average
+                  } avg score and</span>
                   <span class="highlight" style="margin-left: 10px; font-size: 11px;">${
                     course.passRate
-                  }%</span>
+                  }% pass rate</span>
                 </div>
               </div>
             `

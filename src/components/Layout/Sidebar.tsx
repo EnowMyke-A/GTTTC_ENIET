@@ -23,7 +23,8 @@ import {
   Home,
   House,
   Scale,
-  UsersRound
+  UsersRound,
+  ClipboardCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -83,6 +84,7 @@ const Sidebar = ({ className }: SidebarProps) => {
     { icon: House, label: "Dashboard", path: "/" },
     { icon: BookOpen, label: "My Courses", path: "/my-courses" },
     { icon: ClipboardList, label: "Marks", path: "/marks" },
+    { icon: ClipboardCheck, label: "Course Progress", path: "/course-progress" },
   ];
 
   // Add class master specific items if applicable

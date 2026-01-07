@@ -56,9 +56,7 @@ function toTitleCase(value: string): string {
       if (part.startsWith("(") && part.endsWith(")")) {
         return part;
       }
-      return part
-        .toLowerCase()
-        .replace(/\b\w/g, (char) => char.toUpperCase());
+      return part.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
     })
     .join("");
 }
@@ -71,12 +69,12 @@ const Council = () => {
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("");
   const [threshold, setThreshold] = useState("10");
-  
+
   const [academicYears, setAcademicYears] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [levels, setLevels] = useState<any[]>([]);
   const [students, setStudents] = useState<StudentRecord[]>([]);
-  
+
   const [loading, setLoading] = useState(true);
   const [fetchingStudents, setFetchingStudents] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -99,14 +97,15 @@ const Council = () => {
     try {
       setLoading(true);
 
-      const [yearsResponse, departmentsResponse, levelsResponse] = await Promise.all([
-        supabase
-          .from("academic_years")
-          .select("*")
-          .order("is_active", { ascending: false }),
-        supabase.from("departments").select("*").order("name"),
-        supabase.from("levels").select("*").order("id"),
-      ]);
+      const [yearsResponse, departmentsResponse, levelsResponse] =
+        await Promise.all([
+          supabase
+            .from("academic_years")
+            .select("*")
+            .order("is_active", { ascending: false }),
+          supabase.from("departments").select("*").order("name"),
+          supabase.from("levels").select("*").order("id"),
+        ]);
 
       if (yearsResponse.error) throw yearsResponse.error;
       if (departmentsResponse.error) throw departmentsResponse.error;
@@ -277,7 +276,8 @@ const Council = () => {
       if (updates.length === 0) {
         toast({
           title: "No Changes",
-          description: "All students already have the correct status based on threshold",
+          description:
+            "All students already have the correct status based on threshold",
         });
         setProcessing(false);
         return;
@@ -404,7 +404,8 @@ const Council = () => {
     promoted: students.filter((s) => s.promotion_status === "promoted").length,
     repeated: students.filter((s) => s.promotion_status === "repeated").length,
     pending: students.filter((s) => s.promotion_status === "pending").length,
-    modified: students.filter((s) => s.promotion_status !== s.original_status).length,
+    modified: students.filter((s) => s.promotion_status !== s.original_status)
+      .length,
   };
 
   if (userRole !== "admin") {
@@ -470,8 +471,7 @@ const Council = () => {
                 <SelectContent>
                   {academicYears.map((year) => (
                     <SelectItem key={year.id} value={year.id}>
-                      {toTitleCase(year.label)}{" "}
-                      {year.is_active && "(Current)"}
+                      {toTitleCase(year.label)} {year.is_active && "(Current)"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -539,9 +539,7 @@ const Council = () => {
                         Processing...
                       </>
                     ) : (
-                      <>
-                        Apply & Save
-                      </>
+                      <>Apply & Save</>
                     )}
                   </Button>
                   {stats.modified > 0 && (
@@ -581,10 +579,11 @@ const Council = () => {
           <Card className="shadow-none border-0 bg-muted/50">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-               
                 <div>
                   <p className="text-2xl font-bold">{stats.total}</p>
-                  <p className="text-xs text-muted-foreground">Total Students</p>
+                  <p className="text-xs text-muted-foreground">
+                    Total Students
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -593,7 +592,6 @@ const Council = () => {
           <Card className="shadow-none border-0 bg-green-500/5">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                
                 <div>
                   <p className="text-2xl font-bold text-green-600">
                     {stats.promoted}
@@ -607,7 +605,6 @@ const Council = () => {
           <Card className="shadow-none border-0 bg-red-500/5">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                
                 <div>
                   <p className="text-2xl font-bold text-red-600">
                     {stats.repeated}
@@ -621,7 +618,6 @@ const Council = () => {
           <Card className="shadow-none border-0 bg-yellow-500/5">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-               
                 <div>
                   <p className="text-2xl font-bold text-yellow-600">
                     {stats.pending}
@@ -699,10 +695,7 @@ const Council = () => {
                     </TableRow>
                   ) : (
                     students.map((student, index) => (
-                      <TableRow
-                        key={student.id}
-                        className="hover:bg-muted/30"
-                      >
+                      <TableRow key={student.id} className="hover:bg-muted/30">
                         <TableCell className="text-muted-foreground">
                           {student.student_matricule}
                         </TableCell>
@@ -730,7 +723,6 @@ const Council = () => {
                               student.promotion_status
                             )} border-0 font-medium flex items-center gap-1 w-fit mx-auto`}
                           >
-                            
                             {toTitleCase(student.promotion_status)}
                           </Badge>
                         </TableCell>
