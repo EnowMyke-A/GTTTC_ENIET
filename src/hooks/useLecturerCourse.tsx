@@ -17,20 +17,43 @@ export const useLecturerCourse = () => {
       }
 
       try {
-        const { data, error } = await supabase
+        // First, get the lecturer's ID
+        const { data: lecturerData, error: lecturerError } = await supabase
           .from("lecturers")
-          .select("id, course_id")
+          .select("id")
           .eq("user_id", user.id)
           .maybeSingle();
 
-        if (error) {
-          console.error("Error checking lecturer course:", error);
+        if (lecturerError) {
+          console.error("Error fetching lecturer:", lecturerError);
           setHasCourse(false);
+          setLoading(false);
           return;
         }
 
-        // Check if lecturer exists and has a course assigned
-        setHasCourse(!!data && !!data.course_id);
+        if (!lecturerData) {
+          console.error("No lecturer record found for user");
+          setHasCourse(false);
+          setLoading(false);
+          return;
+        }
+
+        // Check if lecturer has any assigned courses in lecturer_courses table
+        const { data: coursesData, error: coursesError } = await supabase
+          .from("lecturer_courses")
+          .select("course_id")
+          .eq("lecturer_id", lecturerData.id)
+          .limit(1);
+
+        if (coursesError) {
+          console.error("Error checking lecturer courses:", coursesError);
+          setHasCourse(false);
+          setLoading(false);
+          return;
+        }
+
+        // Lecturer has courses if the array has at least one entry
+        setHasCourse(!!coursesData && coursesData.length > 0);
       } catch (error) {
         console.error("Unexpected error checking lecturer course:", error);
         setHasCourse(false);

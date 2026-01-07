@@ -39,6 +39,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Building2,
 } from "lucide-react";
 import { evaluateScores } from "@/lib/marks";
 import { Loading } from "@/components/ui/loading";
@@ -120,16 +121,14 @@ function toTitleCase(value: string): string {
 
   return value
     .split(/(\([^)]*\))/g) // split but keep bracketed parts
-    .map(part => {
+    .map((part) => {
       // If part is inside brackets, return as-is
       if (part.startsWith("(") && part.endsWith(")")) {
         return part;
       }
 
       // Title-case only non-bracket text
-      return part
-        .toLowerCase()
-        .replace(/\b\w/g, char => char.toUpperCase());
+      return part.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
     })
     .join("");
 }
@@ -144,11 +143,14 @@ const Marks = () => {
   const [levels, setLevels] = useState<Level[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [studentMarks, setStudentMarks] = useState<StudentMark[]>([]);
+  const [courseDepartments, setCourseDepartments] = useState<string[]>([]);
+  const [lecturerCourseIds, setLecturerCourseIds] = useState<string[]>([]);
 
   // Filters
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedTerm, setSelectedTerm] = useState("");
   const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
 
   const [loading, setLoading] = useState(true);
   const [loadingStudents, setLoadingStudents] = useState(false);
@@ -159,7 +161,6 @@ const Marks = () => {
   // Search and sort states
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
 
   useEffect(() => {
     fetchInitialData();
@@ -170,6 +171,15 @@ const Marks = () => {
       fetchStudentsForCourse();
     }
   }, [selectedCourse, selectedTerm]);
+
+  useEffect(() => {
+    if (selectedCourse) {
+      fetchCourseDepartments();
+    } else {
+      setCourseDepartments([]);
+      setSelectedDepartment("all");
+    }
+  }, [selectedCourse]);
 
   const fetchInitialData = async () => {
     try {
@@ -233,13 +243,15 @@ const Marks = () => {
       // Get courses and lecturers with level information
       let coursesQuery = supabase
         .from("courses")
-        .select(`
+        .select(
+          `
           *,
           levels (
             id,
             name
           )
-        `)
+        `
+        )
         .order("name");
       let lecturersQuery = supabase.from("lecturers").select("*");
 
@@ -263,13 +275,25 @@ const Marks = () => {
       setLevels(levelsData || []);
       setDepartments(departmentsData || []);
 
-      // For lecturers, auto-select their course if they have only one
-      if (userRole === "lecturer" && lecturersData.length === 1) {
-        const lecturerCourse = coursesData.find(
-          (c) => c.id === lecturersData[0].course_id
-        );
-        if (lecturerCourse) {
-          setSelectedCourse(lecturerCourse.id);
+      // For lecturers, fetch their assigned courses from lecturer_courses table
+      if (userRole === "lecturer" && user && lecturersData.length > 0) {
+        const lecturerId = lecturersData[0].id;
+        
+        const { data: lecturerCoursesData, error: lcError } = await supabase
+          .from("lecturer_courses")
+          .select("course_id")
+          .eq("lecturer_id", lecturerId);
+
+        if (lcError) {
+          console.error("Error fetching lecturer courses:", lcError);
+        } else {
+          const assignedCourseIds = lecturerCoursesData?.map(lc => lc.course_id) || [];
+          setLecturerCourseIds(assignedCourseIds);
+
+          // Auto-select first assigned course
+          if (assignedCourseIds.length > 0) {
+            setSelectedCourse(assignedCourseIds[0]);
+          }
         }
       }
     } catch (error: any) {
@@ -328,6 +352,32 @@ const Marks = () => {
     }
   };
 
+  const fetchCourseDepartments = async () => {
+    if (!selectedCourse) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("course_departments")
+        .select("department_id")
+        .eq("course_id", selectedCourse);
+
+      if (error) {
+        console.error("Error fetching course departments:", error);
+        toast.error("Failed to fetch course departments");
+        return;
+      }
+
+      const departmentIds = data?.map((cd) => cd.department_id) || [];
+      setCourseDepartments(departmentIds);
+
+      // Auto-reset department filter when course changes
+      setSelectedDepartment("all");
+    } catch (error: any) {
+      console.error("Error in fetchCourseDepartments:", error);
+      toast.error("Error loading course departments: " + error.message);
+    }
+  };
+
   const handleAcademicYearChange = async (academicYearId: string) => {
     setSelectedAcademicYear(academicYearId);
     setSelectedTerm("");
@@ -376,11 +426,15 @@ const Marks = () => {
   ) => {
     // Prevent editing if lecturer and not active academic year/term
     if (userRole === "lecturer") {
-      const selectedYear = academicYears.find(y => y.id === selectedAcademicYear);
-      const selectedTermData = terms.find(t => t.id === selectedTerm);
-      
+      const selectedYear = academicYears.find(
+        (y) => y.id === selectedAcademicYear
+      );
+      const selectedTermData = terms.find((t) => t.id === selectedTerm);
+
       if (!selectedYear?.is_active || !selectedTermData?.is_active) {
-        toast.error("You can only edit marks for the current active academic year and term.");
+        toast.error(
+          "You can only edit marks for the current active academic year and term."
+        );
         return;
       }
     }
@@ -397,11 +451,15 @@ const Marks = () => {
 
     // Double-check restriction for lecturers before saving
     if (userRole === "lecturer") {
-      const selectedYear = academicYears.find(y => y.id === selectedAcademicYear);
-      const selectedTermData = terms.find(t => t.id === selectedTerm);
-      
+      const selectedYear = academicYears.find(
+        (y) => y.id === selectedAcademicYear
+      );
+      const selectedTermData = terms.find((t) => t.id === selectedTerm);
+
       if (!selectedYear?.is_active || !selectedTermData?.is_active) {
-        toast.error("You can only edit marks for the current active academic year and term.");
+        toast.error(
+          "You can only edit marks for the current active academic year and term."
+        );
         setEditingCell(null);
         setEditValue("");
         return;
@@ -548,8 +606,8 @@ const Marks = () => {
 
     // Apply department filter
     if (selectedDepartment !== "all") {
-      filtered = filtered.filter((student) =>
-        student.student_department_id === selectedDepartment
+      filtered = filtered.filter(
+        (student) => student.student_department_id === selectedDepartment
       );
     }
 
@@ -569,51 +627,48 @@ const Marks = () => {
   // Filter courses for lecturers
   const availableCourses =
     userRole === "lecturer"
-      ? courses.filter((course) =>
-          lecturers.some((l) => l.course_id === course.id)
-        )
+      ? courses.filter((course) => lecturerCourseIds.includes(course.id))
       : courses;
 
   const selectedCourseData = courses.find((c) => c.id === selectedCourse);
 
   // Get departments associated with the selected course
   const availableDepartments = React.useMemo(() => {
-    if (!selectedCourse) {
-      return departments;
+    if (!selectedCourse || courseDepartments.length === 0) {
+      return [];
     }
-    
-    // Find students enrolled in this course and get their departments
-    const courseStudentDepartments = new Set(
-      studentMarks
-        .map(student => student.student_department_id)
-        .filter(deptId => deptId) // Filter out null/undefined
-    );
-    
-    // Return departments that have students in this course
-    return departments.filter(dept => courseStudentDepartments.has(dept.id));
-  }, [selectedCourse, studentMarks, departments]);
 
-  // Auto-select department when course changes or when only one department is available
+    // Return departments that are associated with this course via course_departments table
+    return departments.filter((dept) => courseDepartments.includes(dept.id));
+  }, [selectedCourse, courseDepartments, departments]);
+
+  // Auto-select department when only one is available
   React.useEffect(() => {
-    if (selectedCourse && availableDepartments.length === 1) {
-      // Auto-select the single department
+    if (availableDepartments.length === 1) {
       setSelectedDepartment(availableDepartments[0].id);
-    } else if (selectedCourse && availableDepartments.length > 1) {
-      // Reset to "all" when multiple departments are available
-      setSelectedDepartment("all");
-    } else if (!selectedCourse) {
-      // Reset to "all" when no course is selected
-      setSelectedDepartment("all");
+    } else if (
+      availableDepartments.length > 1 &&
+      selectedDepartment !== "all"
+    ) {
+      // Check if currently selected department is still valid
+      const isStillValid = availableDepartments.some(
+        (dept) => dept.id === selectedDepartment
+      );
+      if (!isStillValid) {
+        setSelectedDepartment("all");
+      }
     }
-  }, [selectedCourse, availableDepartments]);
+  }, [availableDepartments]);
 
   // Check if current selection is active (for lecturers)
   const isActiveSelection = React.useMemo(() => {
     if (userRole !== "lecturer") return true;
-    
-    const selectedYear = academicYears.find(y => y.id === selectedAcademicYear);
-    const selectedTermData = terms.find(t => t.id === selectedTerm);
-    
+
+    const selectedYear = academicYears.find(
+      (y) => y.id === selectedAcademicYear
+    );
+    const selectedTermData = terms.find((t) => t.id === selectedTerm);
+
     return selectedYear?.is_active && selectedTermData?.is_active;
   }, [userRole, academicYears, selectedAcademicYear, terms, selectedTerm]);
 
@@ -703,7 +758,13 @@ const Marks = () => {
                 onValueChange={handleAcademicYearChange}
                 disabled={userRole === "lecturer"}
               >
-                <SelectTrigger className={userRole === "lecturer" ? "opacity-70 cursor-not-allowed" : ""}>
+                <SelectTrigger
+                  className={
+                    userRole === "lecturer"
+                      ? "opacity-70 cursor-not-allowed"
+                      : ""
+                  }
+                >
                   <SelectValue placeholder="Select academic year" />
                 </SelectTrigger>
                 <SelectContent>
@@ -718,12 +779,18 @@ const Marks = () => {
 
             <div>
               <Label>Term</Label>
-              <Select 
-                value={selectedTerm} 
+              <Select
+                value={selectedTerm}
                 onValueChange={setSelectedTerm}
                 disabled={userRole === "lecturer"}
               >
-                <SelectTrigger className={userRole === "lecturer" ? "opacity-95 cursor-not-allowed" : ""}>
+                <SelectTrigger
+                  className={
+                    userRole === "lecturer"
+                      ? "opacity-95 cursor-not-allowed"
+                      : ""
+                  }
+                >
                   <SelectValue placeholder="Select term" />
                 </SelectTrigger>
                 <SelectContent>
@@ -749,8 +816,18 @@ const Marks = () => {
                 </SelectTrigger>
                 <SelectContent className="w-[100%]">
                   {availableCourses.map((course) => (
-                    <SelectItem key={course.id} value={course.id} className="w-[100%]">
-                      <p className="flex items-center justify-between gap-2 w-[100%]"><span>{toTitleCase(course.name)}</span><span>-</span><span>{`L${course.levels?.name}` || `L${course.level_id}`}</span></p>
+                    <SelectItem
+                      key={course.id}
+                      value={course.id}
+                      className="w-[100%]"
+                    >
+                      <p className="flex items-center justify-between gap-2 w-[100%]">
+                        <span>{toTitleCase(course.name)}</span>
+                        <span>-</span>
+                        <span>
+                          {`L${course.levels?.name}` || `L${course.level_id}`}
+                        </span>
+                      </p>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -759,12 +836,16 @@ const Marks = () => {
           </div>
 
           {selectedCourseData && (
-            <div className="flex items-center gap-4 text-sm text-muted-foreground collapsible-content" data-state="open">
+            <div
+              className="flex items-center gap-4 text-sm text-muted-foreground collapsible-content"
+              data-state="open"
+            >
               <Badge
                 variant="secondary"
                 className="bg-muted hover:bg-accent/30"
               >
-                {selectedCourseData.levels?.name || `Level ${selectedCourseData.level_id}`}
+                {selectedCourseData.levels?.name ||
+                  `Level ${selectedCourseData.level_id}`}
               </Badge>
               <Badge
                 variant="outline"
@@ -810,10 +891,31 @@ const Marks = () => {
                     className="pl-10 search-input"
                   />
                 </div>
-                <div className="w-full sm:w-48">
-                  <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                    <SelectTrigger className="text-muted-foreground/80">
-                      <SelectValue placeholder="Filter by department" />
+                <div className="relative w-full sm:w-56">
+                  <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 h-4 w-4 z-10 pointer-events-none" />
+                  <Select
+                    value={selectedDepartment}
+                    onValueChange={setSelectedDepartment}
+                    disabled={
+                      !selectedCourse || availableDepartments.length === 0
+                    }
+                  >
+                    <SelectTrigger
+                      className={`text-muted-foreground/80 pl-10 ${
+                        !selectedCourse || availableDepartments.length === 0
+                          ? "opacity-70 cursor-not-allowed"
+                          : ""
+                      }`}
+                    >
+                      <SelectValue
+                        placeholder={
+                          !selectedCourse
+                            ? "Select course first"
+                            : availableDepartments.length === 0
+                            ? "No departments"
+                            : "Filter by department"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {availableDepartments.length > 1 && (
@@ -920,7 +1022,10 @@ const Marks = () => {
                                 )
                               }
                             >
-                              {studentMark.ca_score !== null && studentMark.ca_score !== undefined ? studentMark.ca_score : "-"}
+                              {studentMark.ca_score !== null &&
+                              studentMark.ca_score !== undefined
+                                ? studentMark.ca_score
+                                : "-"}
                             </div>
                           )}
                         </TableCell>
@@ -956,7 +1061,10 @@ const Marks = () => {
                                 )
                               }
                             >
-                              {studentMark.exam_score !== null && studentMark.exam_score !== undefined ? studentMark.exam_score : "-"}
+                              {studentMark.exam_score !== null &&
+                              studentMark.exam_score !== undefined
+                                ? studentMark.exam_score
+                                : "-"}
                             </div>
                           )}
                         </TableCell>

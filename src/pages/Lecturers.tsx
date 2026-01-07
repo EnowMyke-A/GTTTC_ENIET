@@ -19,7 +19,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 // Displays all courses assigned to a lecturer as badges
-const LecturerCoursesBadges = ({ lecturerId, courses }: { lecturerId: string, courses: any[] }) => {
+const LecturerCoursesBadges = ({
+  lecturerId,
+  courses,
+}: {
+  lecturerId: string;
+  courses: any[];
+}) => {
   const [assigned, setAssigned] = useState<string[]>([]);
   useEffect(() => {
     (async () => {
@@ -36,7 +42,11 @@ const LecturerCoursesBadges = ({ lecturerId, courses }: { lecturerId: string, co
       {assigned.map((cid) => {
         const course = courses.find((c) => c.id === cid);
         return course ? (
-          <Badge key={cid} variant="secondary" className="bg-muted text-primary">
+          <Badge
+            key={cid}
+            variant="secondary"
+            className="bg-muted text-primary text-[10px]"
+          >
             {course.name} - {course.levels?.name || `Level ${course.level_id}`}
           </Badge>
         ) : null;
@@ -54,6 +64,8 @@ import {
   Clock,
   UserCheck,
   Mail,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   Dialog,
@@ -130,8 +142,14 @@ const Lecturers = () => {
     department_id: "",
     level_id: "",
   });
-  const [lecturerCourseAssignments, setLecturerCourseAssignments] = useState<{course_id: string, lecturer_id: string}[]>([]);
+  const [lecturerCourseAssignments, setLecturerCourseAssignments] = useState<
+    { course_id: string; lecturer_id: string }[]
+  >([]);
   const { toast } = useToast();
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   useEffect(() => {
     fetchData();
@@ -154,11 +172,12 @@ const Lecturers = () => {
         levelsResponse,
       ] = await Promise.all([
         supabase.from("lecturers").select("*").order("created_at"),
-        
+
         // --- UPDATED SECTION ---
         supabase
           .from("courses")
-          .select(`
+          .select(
+            `
             id, 
             name, 
             description, 
@@ -171,7 +190,8 @@ const Lecturers = () => {
               id,
               name
             )
-          `)
+          `
+          )
           .order("name"),
         // -----------------------
 
@@ -204,24 +224,24 @@ const Lecturers = () => {
     }
   };
 
-   function toTitleCase(value: string): string {
-  if (!value) return "";
+  function toTitleCase(value: string): string {
+    if (!value) return "";
 
-  return value
-    .split(/(\([^)]*\))/g) // split but keep bracketed parts
-    .map(part => {
-      // If part is inside brackets, return as-is
-      if (part.startsWith("(") && part.endsWith(")")) {
-        return part;
-      }
+    return value
+      .split(/(\([^)]*\))/g) // split but keep bracketed parts
+      .map((part) => {
+        // If part is inside brackets, return as-is
+        if (part.startsWith("(") && part.endsWith(")")) {
+          return part;
+        }
 
-      // Title-case only non-bracket text
-      return part
-        .toLowerCase()
-        .replace(/\b\w/g, char => char.toUpperCase());
-    })
-    .join("");
-}
+        // Title-case only non-bracket text
+        return part
+          .toLowerCase()
+          .replace(/\b\w/g, (char) => char.toUpperCase());
+      })
+      .join("");
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,14 +282,19 @@ const Lecturers = () => {
 
       // Update lecturer_courses assignments
       // Remove all current assignments for this lecturer
-      await supabase.from("lecturer_courses").delete().eq("lecturer_id", editingLecturer.id);
+      await supabase
+        .from("lecturer_courses")
+        .delete()
+        .eq("lecturer_id", editingLecturer.id);
       // Insert new assignments
       if (formData.course_ids.length > 0) {
         const inserts = formData.course_ids.map((course_id) => ({
           lecturer_id: editingLecturer.id,
           course_id,
         }));
-        const { error: courseError } = await supabase.from("lecturer_courses").insert(inserts);
+        const { error: courseError } = await supabase
+          .from("lecturer_courses")
+          .insert(inserts);
         if (courseError) throw courseError;
       }
 
@@ -290,7 +315,7 @@ const Lecturers = () => {
       setEditingLecturer(null);
       await fetchData();
       await fetchLecturerCourseAssignments();
-      setRefreshKey(k => k + 1);
+      setRefreshKey((k) => k + 1);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -301,7 +326,6 @@ const Lecturers = () => {
       setSubmitting(false);
     }
   };
-
 
   const deleteLecturer = async (id: string) => {
     setDeleting(true);
@@ -335,7 +359,9 @@ const Lecturers = () => {
       .from("lecturer_courses")
       .select("course_id")
       .eq("lecturer_id", lecturer.id);
-    const assignedCourseIds = lecturerCourses ? lecturerCourses.map((lc: any) => lc.course_id) : [];
+    const assignedCourseIds = lecturerCourses
+      ? lecturerCourses.map((lc: any) => lc.course_id)
+      : [];
     setFormData({
       full_name: lecturer.full_name,
       phone: lecturer.phone || "",
@@ -360,27 +386,29 @@ const Lecturers = () => {
     setDialogOpen(true);
   };
 
-
-
   const getAvailableCourses = () => {
     // Only show courses that are unassigned or assigned to this lecturer
     const currentLecturerId = editingLecturer?.id;
     const assignedMap = new Map<string, string>();
-    lecturerCourseAssignments.forEach((a) => assignedMap.set(a.course_id, a.lecturer_id));
+    lecturerCourseAssignments.forEach((a) =>
+      assignedMap.set(a.course_id, a.lecturer_id)
+    );
     let filtered = courses.filter((course: any) => {
       const assignedTo = assignedMap.get(course.id);
       return !assignedTo || assignedTo === currentLecturerId;
     });
     if (courseDeptFilter && courseDeptFilter !== "all") {
       filtered = filtered.filter((c: any) =>
-        (Array.isArray(c.departments)
+        Array.isArray(c.departments)
           ? c.departments.some((d: any) => d.id === courseDeptFilter)
-          : false)
+          : false
       );
     }
 
     if (courseLevelFilter && courseLevelFilter !== "all") {
-      filtered = filtered.filter((c: any) => c.level_id?.toString() === courseLevelFilter);
+      filtered = filtered.filter(
+        (c: any) => c.level_id?.toString() === courseLevelFilter
+      );
     }
     return filtered;
   };
@@ -410,6 +438,17 @@ const Lecturers = () => {
     );
   };
 
+  // Calculate pagination
+  const totalPages = Math.ceil(lecturers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLecturers = lecturers.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   if (loading) {
     return (
       <div className="md:p-4 space-y-6">
@@ -426,7 +465,7 @@ const Lecturers = () => {
           {Array.from({ length: 6 }).map((_, i) => (
             <Card
               key={i}
-              className="shadow-none border-0 bg-muted-foreground/[0.01]"
+              className="shadow-none border-0 bg-muted-foreground/[0.01] flex flex-col"
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
@@ -434,10 +473,12 @@ const Lecturers = () => {
                   <div className="h-6 w-40 bg-muted-foreground/5 animate-pulse rounded-md" />
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="h-4 w-32 bg-muted-foreground/5 animate-pulse rounded-md" />
-                <div className="h-4 w-[100%] rounded-md bg-muted-foreground/5 animate-pulse" />
-                <div className="flex gap-2 mt-8">
+              <CardContent className="flex flex-col flex-1">
+                <div className="space-y-3 flex-1">
+                  <div className="h-4 w-32 bg-muted-foreground/5 animate-pulse rounded-md" />
+                  <div className="h-4 w-[100%] rounded-md bg-muted-foreground/5 animate-pulse" />
+                </div>
+                <div className="flex gap-2 mt-4">
                   <div className="h-8 flex-1 rounded-md bg-muted-foreground/5 animate-pulse" />
                   <div className="h-8 flex-1 rounded-md bg-muted-foreground/5 animate-pulse" />
                 </div>
@@ -450,7 +491,7 @@ const Lecturers = () => {
   }
 
   return (
-    <div key={refreshKey} className="md:p-4 space-y-6">
+    <div key={refreshKey} className="md:p-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-muted-foreground/85">
@@ -464,7 +505,9 @@ const Lecturers = () => {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="text-sm gap-6">
             <DialogHeader>
-              <DialogTitle className="text-muted-foreground/85">Edit Lecturer Assignment</DialogTitle>
+              <DialogTitle className="text-muted-foreground/85">
+                Edit Lecturer Assignment
+              </DialogTitle>
               <DialogDescription className="text-muted-foreground/70 text-xs">
                 Assign courses and designate class masters here.
               </DialogDescription>
@@ -491,7 +534,10 @@ const Lecturers = () => {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Courses</Label>
                 <div className="flex gap-2 mb-4">
-                  <Select value={courseDeptFilter} onValueChange={setCourseDeptFilter}>
+                  <Select
+                    value={courseDeptFilter}
+                    onValueChange={setCourseDeptFilter}
+                  >
                     <SelectTrigger className="w-[150px] text-xs">
                       <SelectValue placeholder="All Departments" />
                     </SelectTrigger>
@@ -504,7 +550,10 @@ const Lecturers = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={courseLevelFilter} onValueChange={setCourseLevelFilter}>
+                  <Select
+                    value={courseLevelFilter}
+                    onValueChange={setCourseLevelFilter}
+                  >
                     <SelectTrigger className="w-[120px] text-xs">
                       <SelectValue placeholder="All Levels" />
                     </SelectTrigger>
@@ -520,10 +569,15 @@ const Lecturers = () => {
                 </div>
                 <div className="grid grid-cols-1 gap-3 mt-4 mb-5 max-h-[180px] overflow-y-auto border rounded-md p-2 bg-background">
                   {getAvailableCourses().map((course) => (
-                    <div key={course.id} className="flex items-center space-x-2">
+                    <div
+                      key={course.id}
+                      className="flex items-center space-x-2"
+                    >
                       <Checkbox
                         id={course.id}
-                        checked={(formData.course_ids ?? []).includes(course.id)}
+                        checked={(formData.course_ids ?? []).includes(
+                          course.id
+                        )}
                         onCheckedChange={(checked) => {
                           if (checked) {
                             setFormData((prev) => ({
@@ -533,13 +587,17 @@ const Lecturers = () => {
                           } else {
                             setFormData((prev) => ({
                               ...prev,
-                              course_ids: prev.course_ids.filter((id) => id !== course.id),
+                              course_ids: prev.course_ids.filter(
+                                (id) => id !== course.id
+                              ),
                             }));
                           }
                         }}
                       />
                       <Label htmlFor={course.id} className="text-xs font-light">
-                        {course.name} - {`L${course.levels?.name}` || `Level ${course.level_id}`}
+                        {course.name} -{" "}
+                        {`L${course.levels?.name}` ||
+                          `Level ${course.level_id}`}
                       </Label>
                     </div>
                   ))}
@@ -691,73 +749,79 @@ const Lecturers = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {lecturers.map((lecturer) => (
-            <Card key={lecturer.id} className="shadow-[0]">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg ellipse">
-                  <div className="bg-muted p-[12px] rounded-[50%]">
-                    <UserCheck className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="truncate text-muted-foreground/85">{toTitleCase(lecturer.full_name)}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {lecturer.email && (
-                    <div className="flex items-center gap-2 p-2 pb-0">
-                      <Mail className="h-4 w-4 text-muted-foreground/80" />
-                      <span className="text-sm text-muted-foreground/80">
-                        {lecturer.email}
-                      </span>
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
+            {paginatedLecturers.map((lecturer) => (
+              <Card key={lecturer.id} className="shadow-[0] flex flex-col">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg ellipse">
+                    <div className="bg-muted p-[12px] rounded-[50%]">
+                      <UserCheck className="h-4 w-4 text-primary" />
                     </div>
-                  )}
-                  {lecturer.phone && (
-                    <div>
-                      <span className="text-sm font-medium">Phone:</span>
-                      <span className="text-sm text-muted-foreground ml-2">
-                        {lecturer.phone}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 min-h-[32px]">
-                  <LecturerCoursesBadges lecturerId={lecturer.id} courses={courses} />
-                    {lecturer.class_master &&
-                      lecturer.department_id &&
-                      lecturer.level_id && (
-                        <div className="flex items-center gap-2">
+                    <span className="truncate text-muted-foreground/85">
+                      {toTitleCase(lecturer.full_name)}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col flex-1">
+                  <div className="space-y-3 flex-1">
+                    {lecturer.email && (
+                      <div className="flex items-center gap-2 p-2 pb-0">
+                        <Mail className="h-4 w-4 text-muted-foreground/80" />
+                        <span className="text-sm text-muted-foreground/80">
+                          {lecturer.email}
+                        </span>
+                      </div>
+                    )}
+                    {lecturer.phone && (
+                      <div>
+                        <span className="text-sm font-medium">Phone:</span>
+                        <span className="text-sm text-muted-foreground ml-2">
+                          {lecturer.phone}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 min-h-[32px]">
+                      <LecturerCoursesBadges
+                        lecturerId={lecturer.id}
+                        courses={courses}
+                      />
+                      {lecturer.class_master &&
+                        lecturer.department_id &&
+                        lecturer.level_id && (
+                          <div className="flex items-center gap-2">
+                            <div className="mt-1">
+                              <Badge
+                                variant={"secondary"}
+                                className="bg-muted text-primary hover:bg-accent/30"
+                              >
+                                {getClassName(
+                                  lecturer.department_id,
+                                  lecturer.level_id
+                                )}
+                                &nbsp; Class Master
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
+                      {lecturerCourseAssignments.filter(
+                        (a) => a.lecturer_id === lecturer.id
+                      ).length === 0 && (
+                        <div>
                           <div className="mt-1">
                             <Badge
-                              variant={"secondary"}
-                              className="bg-muted text-primary hover:bg-accent/30"
+                              variant={"destructive"}
+                              className="text-destructive bg-destructive/10"
                             >
-                              {getClassName(
-                                lecturer.department_id,
-                                lecturer.level_id
-                              )}
-                              &nbsp; Class Master
+                              Unverified Lecturer
                             </Badge>
                           </div>
                         </div>
                       )}
-                      {
-                        lecturerCourseAssignments.filter(a => a.lecturer_id === lecturer.id).length === 0 && (
-                          <div>
-                            <div className="mt-1">
-                              <Badge
-                                variant={"destructive"}
-                                className="text-destructive bg-destructive/10"
-                              >
-                                Unverified Lecturer
-                              </Badge>
-                            </div>
-                          </div>
-                        )
-                      }
-                    
+                    </div>
                   </div>
 
-                  <div className="flex gap-2 modal-button">
+                  <div className="flex gap-2 mt-4 modal-button">
                     <Button
                       variant="outline"
                       size="sm"
@@ -765,7 +829,11 @@ const Lecturers = () => {
                       className="flex-1 border-0 bg-primary text-primary-foreground hover:bg-primary/95 hover:text-primary-foreground"
                     >
                       <Edit className="h-4 w-4 mr-1" />
-                      {lecturerCourseAssignments.filter(a => a.lecturer_id === lecturer.id).length === 0 ? "Verify" : "Edit"}
+                      {lecturerCourseAssignments.filter(
+                        (a) => a.lecturer_id === lecturer.id
+                      ).length === 0
+                        ? "Verify"
+                        : "Edit"}
                     </Button>
                     <Button
                       variant="destructive"
@@ -780,16 +848,88 @@ const Lecturers = () => {
                       Delete
                     </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-12 text-muted-foreground/80">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="bg-muted border-0 hover:bg-accent/30"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => {
+                    // Show first page, last page, current page, and pages around current
+                    const showPage =
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1);
+
+                    const showEllipsis =
+                      (page === currentPage - 2 && currentPage > 3) ||
+                      (page === currentPage + 2 &&
+                        currentPage < totalPages - 2);
+
+                    if (showEllipsis) {
+                      return (
+                        <span key={page} className="px-2 text-muted-foreground">
+                          ...
+                        </span>
+                      );
+                    }
+
+                    if (!showPage) return null;
+
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className={
+                          currentPage === page
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                            : "bg-muted border-0 hover:bg-accent/30"
+                        }
+                      >
+                        {page}
+                      </Button>
+                    );
+                  }
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="bg-muted border-0 hover:bg-accent/30"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
+        </>
       )}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-muted-foreground/85">Delete lecturer?</AlertDialogTitle>
+            <AlertDialogTitle className="text-muted-foreground/85">
+              Delete lecturer?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground/80">
               This action cannot be undone and will permanently remove this
               lecturer.

@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useMobileNav } from "@/hooks/useMobileNav";
 import { useResponsive } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { NavLink } from "react-router-dom";
 import {
@@ -30,9 +32,37 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ className }: SidebarProps) => {
-  const { userRole } = useAuth();
+  const { userRole, user } = useAuth();
   const { isSidebarOpen, closeSidebar } = useMobileNav();
   const { isMobile } = useResponsive();
+  const [isClassMaster, setIsClassMaster] = useState(false);
+
+  useEffect(() => {
+    const checkClassMasterStatus = async () => {
+      if (userRole === "lecturer" && user) {
+        try {
+          const { data, error } = await supabase
+            .from("lecturers")
+            .select("class_master, department_id, level_id")
+            .eq("user_id", user.id)
+            .single();
+
+          if (!error && data) {
+            const lecturerInfo = data as any;
+            setIsClassMaster(
+              lecturerInfo?.class_master &&
+              lecturerInfo?.department_id &&
+              lecturerInfo?.level_id
+            );
+          }
+        } catch (error) {
+          console.error("Error checking class master status:", error);
+        }
+      }
+    };
+
+    checkClassMasterStatus();
+  }, [userRole, user]);
 
   const adminNavItems = [
     { icon: House, label: "Dashboard", path: "/" },
@@ -49,11 +79,21 @@ const Sidebar = ({ className }: SidebarProps) => {
     { icon: UsersRound, label: "Class Council", path: "/class-council" },
   ];
 
-  const lecturerNavItems = [
+  const baseLecturerNavItems = [
     { icon: House, label: "Dashboard", path: "/" },
     { icon: BookOpen, label: "My Courses", path: "/my-courses" },
     { icon: ClipboardList, label: "Marks", path: "/marks" },
   ];
+
+  // Add class master specific items if applicable
+  const classMasterNavItems = [
+    { icon: FileText, label: "Report Cards", path: "/report-cards" },
+    { icon: TrendingUp, label: "Statistics", path: "/analytics" },
+  ];
+
+  const lecturerNavItems = isClassMaster 
+    ? [...baseLecturerNavItems, ...classMasterNavItems]
+    : baseLecturerNavItems;
 
   const navItems = userRole === "admin" ? adminNavItems : lecturerNavItems;
 

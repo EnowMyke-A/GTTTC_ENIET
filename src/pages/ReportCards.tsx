@@ -139,7 +139,7 @@ interface ReportCardData {
 }
 
 const ReportCards = () => {
-  const { userRole } = useAuth();
+  const { userRole, user } = useAuth();
   const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
   const [selectedTerm, setSelectedTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
@@ -162,23 +162,18 @@ const ReportCards = () => {
   const [fetchingStudents, setFetchingStudents] = useState(false);
   const [bulkGenerating, setBulkGenerating] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [isClassMaster, setIsClassMaster] = useState(false);
+  const [classMasterDepartment, setClassMasterDepartment] = useState<string>("");
+  const [classMasterLevel, setClassMasterLevel] = useState<string>("");
   const printRef = useRef<HTMLDivElement>(null);
   const modalPrintRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (userRole === "admin") {
+    if (userRole === "admin" || userRole === "lecturer") {
       fetchInitialData();
     }
   }, [userRole]);
-
-  useEffect(() => {
-    fetchTerms();
-  }, []);
-
-  useEffect(() => {
-    fetchLevels();
-  }, []);
 
   useEffect(() => {
     if (selectedAcademicYear && selectedTerm && selectedDepartment && selectedLevel) {
@@ -204,6 +199,37 @@ const ReportCards = () => {
 
   const fetchInitialData = async () => {
     try {
+      let isClassMasterLocal = false;
+      let classMasterDeptId = "";
+      let classMasterLvlId = "";
+
+      // Check if lecturer is class master FIRST
+      if (userRole === "lecturer" && user) {
+        const { data: lecturerData, error: lecturerError } = await supabase
+          .from("lecturers")
+          .select("class_master, department_id, level_id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (lecturerError) {
+          console.error("Error fetching lecturer:", lecturerError);
+        } else {
+          const lecturerInfo = lecturerData as any;
+          console.log("Lecturer info:", lecturerInfo); // Debug log
+          if (lecturerInfo?.class_master && lecturerInfo?.department_id && lecturerInfo?.level_id) {
+            isClassMasterLocal = true;
+            classMasterDeptId = lecturerInfo.department_id;
+            classMasterLvlId = lecturerInfo.level_id.toString();
+            setIsClassMaster(true);
+            setClassMasterDepartment(classMasterDeptId);
+            setClassMasterLevel(classMasterLvlId);
+            console.log("Class master status set to true"); // Debug log
+          } else {
+            console.log("Not a class master or missing department/level"); // Debug log
+          }
+        }
+      }
+
       // Get all academic years
       const { data: yearsData, error: ayError } = await supabase
         .from("academic_years")
@@ -219,29 +245,7 @@ const ReportCards = () => {
         setSelectedAcademicYear(activeYear.id);
       }
 
-      // Get departments
-      const { data: deptData, error: deptError } = await supabase
-        .from("departments")
-        .select("id, name")
-        .order("name");
-      if (deptError) throw deptError;
-
-      setDepartments(deptData || []);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    } finally {
-      setTimeout(() => {
-        setLoading(false);
-      }, 500);
-    }
-  };
-
-  const fetchTerms = async () => {
-    try {
+      // Get terms
       const { data: termsData, error: termError } = await supabase
         .from("terms")
         .select("id, label, is_active")
@@ -255,17 +259,17 @@ const ReportCards = () => {
       if (activeTerm) {
         setSelectedTerm(activeTerm.id);
       }
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    }
-  };
 
-  const fetchLevels = async () => {
-    try {
+      // Get departments
+      const { data: deptData, error: deptError } = await supabase
+        .from("departments")
+        .select("id, name")
+        .order("name");
+      if (deptError) throw deptError;
+
+      setDepartments(deptData || []);
+
+      // Get levels
       const { data: levelsData, error: levelsError } = await supabase
         .from("levels")
         .select("id, name")
@@ -274,9 +278,15 @@ const ReportCards = () => {
 
       setLevels(levelsData || []);
 
-      // Set first level as default
-      if (levelsData && levelsData.length > 0) {
-        setSelectedLevel(levelsData[0].id.toString());
+      // Set department and level based on user type
+      if (isClassMasterLocal) {
+        // For class masters, use their assigned department and level
+        setSelectedDepartment(classMasterDeptId);
+        setSelectedLevel(classMasterLvlId);
+        console.log("Set class master filters:", classMasterDeptId, classMasterLvlId); // Debug log
+      } else if (userRole === "admin") {
+        // For admins, don't auto-select (let them choose)
+        // But we could set defaults here if needed
       }
     } catch (error: any) {
       toast({
@@ -284,8 +294,13 @@ const ReportCards = () => {
         title: "Error",
         description: error.message,
       });
+    } finally {
+      setTimeout(() => {
+        setLoading(false);
+      }, 500);
     }
   };
+
   const fetchStudents = async () => {
     if (!selectedAcademicYear || !selectedTerm || !selectedDepartment || !selectedLevel) {
       setFetchingStudents(false);
@@ -1212,6 +1227,7 @@ const ReportCards = () => {
     }
   };
 
+  // Show loading state while checking permissions
   if (loading) {
     return (
       <div className="md:p-4 space-y-6">
@@ -1267,12 +1283,13 @@ const ReportCards = () => {
     );
   }
 
-  if (userRole !== "admin") {
+  // Check access after loading completes
+  if (userRole !== "admin" && (userRole === "lecturer" && !isClassMaster)) {
     return (
       <div className="p-6 text-center">
         <h1 className="text-2xl font-bold text-muted-foreground/85">Access Denied</h1>
         <p className="text-sm sm:text-base text-muted-foreground/80">
-          Only administrators can generate report cards.
+          Only administrators and class masters can generate report cards.
         </p>
       </div>
     );
@@ -1327,10 +1344,11 @@ const ReportCards = () => {
               </Select>
             </div>
             <div>
-              <Label htmlFor="department">Department</Label>
+              <Label htmlFor="department">Department {isClassMaster && "(Locked)"}</Label>
               <Select
                 value={selectedDepartment}
                 onValueChange={setSelectedDepartment}
+                disabled={isClassMaster}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select department" />
@@ -1345,8 +1363,8 @@ const ReportCards = () => {
               </Select>
             </div>
             <div>
-              <Label htmlFor="level">Level</Label>
-              <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+              <Label htmlFor="level">Level {isClassMaster && "(Locked)"}</Label>
+              <Select value={selectedLevel} onValueChange={setSelectedLevel} disabled={isClassMaster}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select level" />
                 </SelectTrigger>

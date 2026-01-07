@@ -24,6 +24,8 @@ import {
   Loader2,
   ArrowUpDown,
   Filter,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   Dialog,
@@ -95,6 +97,10 @@ const Courses = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showFilters, setShowFilters] = useState(true);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -117,7 +123,10 @@ const Courses = () => {
           `
             )
             .order("name"),
-          supabase.from("departments").select("id, name, abbreviation").order("name"),
+          supabase
+            .from("departments")
+            .select("id, name, abbreviation")
+            .order("name"),
           supabase.from("levels").select("id, name").order("name"),
         ]);
 
@@ -243,23 +252,23 @@ const Courses = () => {
   };
 
   function toTitleCase(value: string): string {
-  if (!value) return "";
+    if (!value) return "";
 
-  return value
-    .split(/(\([^)]*\))/g) // split but keep bracketed parts
-    .map(part => {
-      // If part is inside brackets, return as-is
-      if (part.startsWith("(") && part.endsWith(")")) {
-        return part;
-      }
+    return value
+      .split(/(\([^)]*\))/g) // split but keep bracketed parts
+      .map((part) => {
+        // If part is inside brackets, return as-is
+        if (part.startsWith("(") && part.endsWith(")")) {
+          return part;
+        }
 
-      // Title-case only non-bracket text
-      return part
-        .toLowerCase()
-        .replace(/\b\w/g, char => char.toUpperCase());
-    })
-    .join("");
-}
+        // Title-case only non-bracket text
+        return part
+          .toLowerCase()
+          .replace(/\b\w/g, (char) => char.toUpperCase());
+      })
+      .join("");
+  }
 
   const deleteCourse = async (id: string) => {
     setDeleting(true);
@@ -357,7 +366,19 @@ const Courses = () => {
     });
 
     setFilteredCourses(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
   }, [courses, filterLevel, filterDepartment, sortOrder]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredCourses.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const resetFilters = () => {
     setFilterLevel("");
@@ -396,20 +417,25 @@ const Courses = () => {
         {/* Course Cards Skeleton */}
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="shadow-none relative pb-12 border-0 bg-muted-foreground/[0.01]">
+            <Card
+              key={i}
+              className="shadow-none flex flex-col border-0 bg-muted-foreground/[0.01]"
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
                   <div className="h-9 w-9 rounded-full bg-muted-foreground/5 animate-pulse" />
                   <div className="h-6 w-32 bg-muted-foreground/5 animate-pulse rounded-md" />
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="h-4 w-full bg-muted-foreground/5 animate-pulse rounded-md" />
-                <div className="flex gap-2">
-                  <div className="h-6 w-20 rounded-md bg-muted-foreground/5 animate-pulse" />
-                  <div className="h-6 w-20 rounded-md bg-muted-foreground/5 animate-pulse" />
+              <CardContent className="flex flex-col flex-1">
+                <div className="space-y-3 flex-1">
+                  <div className="h-4 w-full bg-muted-foreground/5 animate-pulse rounded-md" />
+                  <div className="flex gap-2">
+                    <div className="h-6 w-20 rounded-md bg-muted-foreground/5 animate-pulse" />
+                    <div className="h-6 w-20 rounded-md bg-muted-foreground/5 animate-pulse" />
+                  </div>
                 </div>
-                <div className="flex gap-2 mt-4 absolute bottom-6 left-6 w-[calc(100%-3rem)]">
+                <div className="flex gap-2 mt-4">
                   <div className="h-8 flex-1 rounded-md bg-muted-foreground/5 animate-pulse" />
                   <div className="h-8 flex-1 rounded-md bg-muted-foreground/5 animate-pulse" />
                 </div>
@@ -422,7 +448,7 @@ const Courses = () => {
   }
 
   return (
-    <div className="md:p-4 space-y-6">
+    <div className="md:p-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-muted-foreground/85">
@@ -447,7 +473,9 @@ const Courses = () => {
                   {editingCourse ? "Edit Course" : "Create Course"}
                 </DialogTitle>
                 <DialogDescription className="text-muted-foreground/70 text-xs">
-                  {editingCourse ? "Modify the course details" : "Create a new course"}
+                  {editingCourse
+                    ? "Modify the course details"
+                    : "Create a new course"}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -548,14 +576,20 @@ const Courses = () => {
                     ))}
                   </div>
                 </div>
-                <Button type="submit" className="w-full modal-button" disabled={submitting}>
+                <Button
+                  type="submit"
+                  className="w-full modal-button"
+                  disabled={submitting}
+                >
                   {submitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       {editingCourse ? "Updating..." : "Creating..."}
                     </>
+                  ) : editingCourse ? (
+                    "Update Course"
                   ) : (
-                    editingCourse ? "Update Course" : "Create Course"
+                    "Create Course"
                   )}
                 </Button>
               </form>
@@ -565,7 +599,10 @@ const Courses = () => {
       </div>
 
       {showFilters && (
-        <Card className="p-4 shadow-none text-muted-foreground/85 collapsible-content" data-state="open">
+        <Card
+          className="p-4 shadow-none text-muted-foreground/85 collapsible-content"
+          data-state="open"
+        >
           <div className="flex flex-col sm:flex-row gap-4 lg:items-end">
             <div className="flex-1">
               <Label htmlFor="filter-level">Filter by Level</Label>
@@ -636,110 +673,186 @@ const Courses = () => {
                   No Courses Found
                 </h3>
                 <p className="text-sm text-muted-foreground/80 max-w-md mx-auto">
-                  {filterLevel || filterDepartment ? "No courses match your current filters. Try adjusting your level or department filter." : "No courses have been created yet. Add courses to get started with curriculum management."}
+                  {filterLevel || filterDepartment
+                    ? "No courses match your current filters. Try adjusting your level or department filter."
+                    : "No courses have been created yet. Add courses to get started with curriculum management."}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredCourses.map((course) => (
-          <Card key={course.id} className="shadow-[0] relative pb-12">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <div className="bg-muted p-[12px] rounded-[50%]">
-                  <BookOpen className="h-4 w-4 text-primary flex-shrink-0" />
-                </div>
+        <>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mt-6">
+            {paginatedCourses.map((course) => (
+              <Card key={course.id} className="shadow-[0] flex flex-col">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <div className="bg-muted p-[12px] rounded-[50%]">
+                      <BookOpen className="h-4 w-4 text-primary flex-shrink-0" />
+                    </div>
 
-                <span className="truncate text-muted-foreground/85">{toTitleCase(course.name)}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-muted-foreground/80">
-              <div className="space-y-3 pb-2">
-                {course.description && (
-                  <div className="collapsible-content" data-state="open">
-                    <p className="text-sm text-muted-foreground/85 mt-1 truncate">
-                      {toTitleCase(course.description)}
-                    </p>
-                  </div>
-                )}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <Badge
-                    variant="outline"
-                    className="w-fit inline border-0 bg-muted"
-                  >
-                    COEF {course.coefficient}
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className="w-fit inline border-0 bg-muted"
-                  >
-                    Level {getLevelName(course.level_id)}
-                  </Badge>
-                </div>
-                <div className="flex flex-col gap-2 mb-2">
-                  <div className="flex flex-wrap gap-1">
-                    {course.departments && course.departments.length > 0 ? (
-                      course.departments.map((dept) => (
-                        <Badge
-                          variant="outline"
-                          key={dept.id}
-                          className="text-xs bg-muted hover:bg-accent/30 border-0 content-transition"
-                        >
-                          {dept.abbreviation}
-                        </Badge>
-                      ))
-                    ) : (
+                    <span className="truncate text-muted-foreground/85">
+                      {toTitleCase(course.name)}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-muted-foreground/80 flex flex-col flex-1">
+                  <div className="space-y-3 pb-2 flex-1">
+                    {course.description && (
+                      <div className="collapsible-content" data-state="open">
+                        <p className="text-sm text-muted-foreground/85 mt-1 truncate">
+                          {toTitleCase(course.description)}
+                        </p>
+                      </div>
+                    )}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                       <Badge
                         variant="outline"
-                        className="text-xs bg-muted/50 text-muted-foreground border-0 collapsible-content"
-                        data-state="open"
+                        className="w-fit inline border-0 bg-muted"
                       >
-                        No departments
+                        COEF {course.coefficient}
                       </Badge>
-                    )}
+                      <Badge
+                        variant="outline"
+                        className="w-fit inline border-0 bg-muted"
+                      >
+                        Level {getLevelName(course.level_id)}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-col gap-2 mb-2">
+                      <div className="flex flex-wrap gap-1">
+                        {course.departments && course.departments.length > 0 ? (
+                          course.departments.map((dept) => (
+                            <Badge
+                              variant="outline"
+                              key={dept.id}
+                              className="text-xs bg-muted hover:bg-accent/30 border-0 content-transition"
+                            >
+                              {dept.abbreviation}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-muted/50 text-muted-foreground border-0 collapsible-content"
+                            data-state="open"
+                          >
+                            No departments
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2 mt-4 absolute bottom-6 left-6 w-[calc(100%-3rem)]">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEditDialog(course)}
-                    className="flex-1 border-0 bg-primary text-primary-foreground hover:bg-primary/95 hover:text-primary-foreground"
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={deleting && deleteId === course.id}
-                    onClick={() => {
-                      setDeleteId(course.id);
-                      setDeleteName(course.name);
-                      setDeleteOpen(true);
-                    }}
-                    className="flex-1 bg-muted hover:bg-accent/30 text-accent-foreground"
-                  >
-                    {deleting && deleteId === course.id ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        Deleting...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </>
-                    )}
-                  </Button>
-                </div>
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditDialog(course)}
+                      className="flex-1 border-0 bg-primary text-primary-foreground hover:bg-primary/95 hover:text-primary-foreground"
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={deleting && deleteId === course.id}
+                      onClick={() => {
+                        setDeleteId(course.id);
+                        setDeleteName(course.name);
+                        setDeleteOpen(true);
+                      }}
+                      className="flex-1 bg-muted hover:bg-accent/30 text-accent-foreground"
+                    >
+                      {deleting && deleteId === course.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-12 text-muted-foreground/80">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="bg-muted border-0 hover:bg-accent/30"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => {
+                    // Show first page, last page, current page, and pages around current
+                    const showPage =
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1);
+
+                    const showEllipsis =
+                      (page === currentPage - 2 && currentPage > 3) ||
+                      (page === currentPage + 2 &&
+                        currentPage < totalPages - 2);
+
+                    if (showEllipsis) {
+                      return (
+                        <span key={page} className="px-2 text-muted-foreground">
+                          ...
+                        </span>
+                      );
+                    }
+
+                    if (!showPage) return null;
+
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className={
+                          currentPage === page
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                            : "bg-muted border-0 hover:bg-accent/30"
+                        }
+                      >
+                        {page}
+                      </Button>
+                    );
+                  }
+                )}
               </div>
-            </CardContent>
-          </Card>
-          ))}
-        </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="bg-muted border-0 hover:bg-accent/30"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
+        </>
       )}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

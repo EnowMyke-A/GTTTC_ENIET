@@ -30,6 +30,7 @@ interface LecturerStats {
   assignedCourses: number;
   totalStudents: number;
   marksEntered: number;
+  totalMarksExpected: number;
   isClassMaster: boolean;
   className: string | null;
 }
@@ -38,8 +39,14 @@ interface Course {
   id: string;
   name: string;
   code: string | null;
-  level_id: string | null;
+  level_id: number;
   department_id: string | null;
+  coefficient: number;
+  description: string | null;
+  level?: {
+    id: number;
+    name: string;
+  } | null;
 }
 
 const quickActions = [
@@ -62,11 +69,12 @@ const LecturerDashboard = () => {
     assignedCourses: 0,
     totalStudents: 0,
     marksEntered: 0,
+    totalMarksExpected: 0,
     isClassMaster: false,
     className: null,
   });
   const [loading, setLoading] = useState(true);
-  const [lecturerCourse, setLecturerCourse] = useState<Course | null>(null);
+  const [lecturerCourses, setLecturerCourses] = useState<Course[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -79,19 +87,7 @@ const LecturerDashboard = () => {
         // Get lecturer info
         const { data: lecturerData, error: lecturerError } = await supabase
           .from("lecturers")
-          .select(
-            `
-            id,
-            course_id,
-            courses!lecturers_course_id_fkey (
-              id,
-              name,
-              code,
-              level_id,
-              department_id
-            )
-          `
-          )
+          .select("id, class_master, level_id, department_id")
           .eq("user_id", user.id)
           .single();
 
@@ -100,128 +96,196 @@ const LecturerDashboard = () => {
           throw lecturerError;
         }
 
-        // Get class master info separately
-        const { data: classMasterData } = await supabase
-          .from("lecturers")
-          .select(
-            `
-            id,
-            level_id,
-            department_id,
-            departments!fk_lecturers_department_id (
-              abbreviation,
-              name
-            ),
-            levels!fk_lecturers_level_id (
-              name
-            )
-          `
-          )
-          .eq("user_id", user.id)
-          .not("level_id", "is", null)
-          .not("department_id", "is", null)
-          .maybeSingle();
+        const lecturerId = (lecturerData as any).id;
 
-        // Get marks count entered by this lecturer
-        const { count: marksCount, error: marksError } = await supabase
-          .from("marks")
-          .select("*", { count: "exact", head: true })
-          .eq("course_id", lecturerData?.course_id || "");
+        // Get all assigned courses from lecturer_courses table
+        const { data: lecturerCoursesData, error: lcError } = await (
+          supabase as any
+        )
+          .from("lecturer_courses")
+          .select("course_id")
+          .eq("lecturer_id", lecturerId);
 
-        if (marksError && marksError.code !== "PGRST116") {
-          console.error("Error fetching marks:", marksError);
+        if (lcError) {
+          console.error("Error fetching lecturer courses:", lcError);
+          throw lcError;
         }
 
-        // Get students count for the course at specific department and level
-        let courseStudentsCount = 0;
-        const courseData = lecturerData?.courses as any;
-        if (courseData && courseData.level_id && courseData.department_id) {
-          const { data: academicYearData } = await supabase
+        const courseIds =
+          lecturerCoursesData?.map((lc: any) => lc.course_id) || [];
+
+        // Fetch full course details
+        let coursesData: Course[] = [];
+        if (courseIds.length > 0) {
+          const { data: fetchedCourses, error: coursesError } = await supabase
+            .from("courses")
+            .select(
+              `
+              id,
+              name,
+              code,
+              description,
+              coefficient,
+              level_id,
+              department_id,
+              level:levels(id, name)
+            `
+            )
+            .in("id", courseIds);
+
+          if (coursesError) {
+            console.error("Error fetching courses:", coursesError);
+          } else {
+            coursesData = fetchedCourses || [];
+          }
+        }
+
+        setLecturerCourses(coursesData);
+
+        // Get active academic year and term
+        const [academicYearResult, activeTermResult] = await Promise.all([
+          supabase
             .from("academic_years")
             .select("id")
             .eq("is_active", true)
-            .maybeSingle();
+            .maybeSingle(),
+          supabase
+            .from("terms")
+            .select("id")
+            .eq("is_active", true)
+            .maybeSingle(),
+        ]);
 
-          if (academicYearData) {
-            // Get students in the same level and department
+        const academicYearData = academicYearResult.data;
+        const activeTermData = activeTermResult.data;
+
+        // Calculate total unique students taking lecturer's courses for current academic year
+        let totalUniqueStudents = 0;
+        const uniqueStudentIds = new Set<string>();
+
+        if (academicYearData && courseIds.length > 0) {
+          // For each course, get enrolled students
+          for (const courseId of courseIds) {
+            const course = coursesData.find((c) => c.id === courseId);
+            if (!course || !course.department_id || !course.level_id) continue;
+
+            // Get students in this department
             const { data: studentsData } = await supabase
               .from("students")
               .select("id")
-              .eq("department_id", courseData.department_id);
+              .eq("department_id", course.department_id);
 
             if (studentsData && studentsData.length > 0) {
               const studentIds = studentsData.map((s) => s.id);
 
-              const { count: studentsInLevel } = await supabase
+              // Get enrolled students for this level in current academic year
+              const { data: enrolledStudents } = await supabase
+                .from("class_students")
+                .select("student_id")
+                .eq("academic_year_id", academicYearData.id)
+                .eq("level_id", course.level_id)
+                .in("student_id", studentIds);
+
+              if (enrolledStudents) {
+                enrolledStudents.forEach((es) =>
+                  uniqueStudentIds.add(es.student_id)
+                );
+              }
+            }
+          }
+
+          totalUniqueStudents = uniqueStudentIds.size;
+        }
+
+        // Calculate marks entered vs expected for active academic year and term
+        let marksEntered = 0;
+        let totalMarksExpected = 0;
+
+        if (academicYearData && activeTermData && courseIds.length > 0) {
+          // Count marks entered for active academic year and term
+          const { count: enteredCount, error: marksError } = await supabase
+            .from("marks")
+            .select("*", { count: "exact", head: true })
+            .in("course_id", courseIds)
+            .eq("academic_year_id", academicYearData.id)
+            .eq("term_id", activeTermData.id);
+
+          if (marksError && marksError.code !== "PGRST116") {
+            console.error("Error fetching marks:", marksError);
+          } else {
+            marksEntered = enteredCount || 0;
+          }
+
+          // Calculate expected marks: unique students × number of courses
+          totalMarksExpected = totalUniqueStudents * courseIds.length;
+        }
+
+        // Get class master info
+        let className = null;
+        let isClassMaster = false;
+        let classMasterStudentsCount = 0;
+
+        const lecturerInfo = lecturerData as any;
+
+        if (
+          lecturerInfo.class_master &&
+          lecturerInfo.level_id &&
+          lecturerInfo.department_id
+        ) {
+          isClassMaster = true;
+
+          // Get department and level info
+          const [deptResult, levelResult] = await Promise.all([
+            supabase
+              .from("departments")
+              .select("name, abbreviation")
+              .eq("id", lecturerInfo.department_id)
+              .single(),
+            supabase
+              .from("levels")
+              .select("name")
+              .eq("id", lecturerInfo.level_id)
+              .single(),
+          ]);
+
+          if (deptResult.data && levelResult.data) {
+            const deptAbbr =
+              deptResult.data.abbreviation || deptResult.data.name;
+            className = `${deptAbbr}${levelResult.data.name}`;
+          }
+
+          // Count class master students
+          if (academicYearData) {
+            const { data: studentsData } = await supabase
+              .from("students")
+              .select("id")
+              .eq("department_id", lecturerInfo.department_id);
+
+            if (studentsData && studentsData.length > 0) {
+              const studentIds = studentsData.map((s) => s.id);
+
+              const { count: studentsCount } = await supabase
                 .from("class_students")
                 .select("*", { count: "exact", head: true })
                 .eq("academic_year_id", academicYearData.id)
-                .eq("level_id", courseData.level_id)
+                .eq("level_id", lecturerInfo.level_id)
                 .in("student_id", studentIds);
 
-              courseStudentsCount = studentsInLevel || 0;
+              classMasterStudentsCount = studentsCount || 0;
             }
           }
         }
 
-        // Get total students if class master
-        let totalStudents = 0;
-        let className = null;
-        let isClassMaster = false;
-
-        if (classMasterData?.level_id && classMasterData?.department_id) {
-          isClassMaster = true;
-          const { data: academicYearData } = await supabase
-            .from("academic_years")
-            .select("id")
-            .eq("is_active", true)
-            .maybeSingle();
-
-          if (academicYearData) {
-            const { count: studentsCount } = await supabase
-              .from("class_students")
-              .select("*", { count: "exact", head: true })
-              .eq("academic_year_id", academicYearData.id)
-              .eq("level_id", classMasterData.level_id);
-
-            totalStudents = studentsCount || 0;
-          }
-
-          // Build class name
-          if (classMasterData?.departments && classMasterData?.levels) {
-            const deptData = classMasterData.departments as any;
-            const levelData = classMasterData.levels as any;
-            const deptAbbr = deptData?.abbreviation || deptData?.name || "";
-            className = `${deptAbbr}${levelData?.name || ""}`;
-          }
-        }
-
         setStats({
-          assignedCourses: lecturerData?.course_id ? 1 : 0,
-          totalStudents,
-          marksEntered: marksCount || 0,
+          assignedCourses: courseIds.length,
+          totalStudents: isClassMaster
+            ? classMasterStudentsCount
+            : totalUniqueStudents,
+          marksEntered,
+          totalMarksExpected,
           isClassMaster,
           className,
         });
-
-        if (lecturerData?.courses) {
-          const courseData = lecturerData.courses as any;
-          if (courseData && !Array.isArray(courseData)) {
-            setLecturerCourse({
-              id: courseData.id,
-              name: courseData.name,
-              code: courseData.code,
-              level_id: courseData.level_id,
-              department_id: courseData.department_id,
-            });
-          }
-        }
-
-        // Update stats with course students count
-        setStats((prev) => ({
-          ...prev,
-          totalStudents: courseStudentsCount,
-        }));
       } catch (error: any) {
         console.error("Error fetching lecturer data:", error);
         toast({
@@ -230,7 +294,9 @@ const LecturerDashboard = () => {
           description: "Failed to load dashboard data",
         });
       } finally {
-        setLoading(false);
+        setTimeout(() => {
+          setLoading(false);
+        }, 500);
       }
     };
 
@@ -248,7 +314,10 @@ const LecturerDashboard = () => {
         {/* Stats Cards Skeleton */}
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="shadow-none bg-muted-foreground/[0.01] border-0">
+            <Card
+              key={i}
+              className="shadow-none bg-muted-foreground/[0.01] border-0"
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="h-4 w-24 bg-muted-foreground/5 animate-pulse rounded-md" />
                 <div className="h-10 w-10 rounded-full bg-muted-foreground/5 animate-pulse" />
@@ -288,7 +357,10 @@ const LecturerDashboard = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               {[1, 2].map((i) => (
-                <div key={i} className="h-12 w-full rounded-md bg-muted-foreground/5 animate-pulse" />
+                <div
+                  key={i}
+                  className="h-12 w-full rounded-md bg-muted-foreground/5 animate-pulse"
+                />
               ))}
             </CardContent>
           </Card>
@@ -304,27 +376,36 @@ const LecturerDashboard = () => {
       icon: BookOpen,
       description:
         stats.assignedCourses > 0
-          ? lecturerCourse?.name || "No course name"
+          ? `${stats.assignedCourses} course${
+              stats.assignedCourses > 1 ? "s" : ""
+            } assigned`
           : "Contact admin for assignment",
       color: "text-blue-600",
       isText: false,
+      displayValue: stats.assignedCourses,
     },
     {
       title: "Total Students",
       value: stats.totalStudents,
       icon: Users,
       description:
-        stats.assignedCourses > 0 ? "Taking you course" : "No course assigned",
+        stats.assignedCourses > 0
+          ? stats.isClassMaster
+            ? "In your class (current year)"
+            : "Taking your courses (current year)"
+          : "No courses assigned",
       color: "text-green-600",
       isText: false,
+      displayValue: stats.totalStudents,
     },
     {
       title: "Marks Entered",
       value: stats.marksEntered,
       icon: ClipboardList,
-      description: "Total marks recorded",
+      description: "For current academic year and term",
       color: "text-purple-600",
-      isText: false,
+      isText: true,
+      displayValue: `${stats.marksEntered} / ${stats.totalMarksExpected}`,
     },
   ];
 
@@ -362,7 +443,7 @@ const LecturerDashboard = () => {
                   ></div>
                 ) : (
                   <span className="collapsible-content" data-state="open">
-                    {card.value}
+                    {card.displayValue}
                   </span>
                 )}
               </div>
@@ -376,51 +457,59 @@ const LecturerDashboard = () => {
 
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         {/* Course Information */}
-        {lecturerCourse && (
+        {lecturerCourses.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl text-muted-foreground/85">
                 Course Information
               </CardTitle>
               <CardDescription>
-                Details about your assigned course
+                Details about your assigned courses
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 flex flex-col gap-4">
-              <div className="flex gap-3">
-                    <div className="bg-muted rounded-[50%] w-[36px] h-[36px] flex items-center justify-center">
-                      <BookOpen className="h-4 w-4"/>
+              <div className="space-y-4">
+                {lecturerCourses.map((course) => (
+                  <div
+                    key={course.id}
+                    className="flex gap-3 p-3 rounded-md bg-muted/50 hover:bg-muted transition-colors"
+                  >
+                    <div className="bg-primary/10 rounded-[50%] w-[36px] h-[36px] flex items-center justify-center flex-shrink-0">
+                      <BookOpen className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        Course Name
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="text-sm font-medium text-muted-foreground/85 truncate">
+                        {course.name}
                       </span>
-                      <span className="text-sm">
-                        {lecturerCourse.name}
-                      </span>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        {course.code && (
+                          <span className="bg-muted px-2 py-0.5 rounded">
+                            {course.code}
+                          </span>
+                        )}
+                        {course.level && (
+                          <span className="bg-muted px-2 py-0.5 rounded">
+                            Level {course.level.name}
+                          </span>
+                        )}
+                        <span className="bg-muted px-2 py-0.5 rounded">
+                          Coef {course.coefficient}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                {lecturerCourse.code && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Course Code
-                    </p>
-                    <p className="text-base font-semibold">
-                      {lecturerCourse.code}
-                    </p>
-                  </div>
-                )}
+                ))}
+
                 {stats.isClassMaster && (
-                  <div className="flex gap-3">
-                    <div className="bg-muted rounded-[50%] w-[36px] h-[36px] flex items-center justify-center">
-                      <UserCheck className="h-4 w-4"/>
+                  <div className="flex gap-3 p-3 rounded-md bg-primary/5 border border-primary/20 mt-4">
+                    <div className="bg-primary/10 rounded-[50%] w-[36px] h-[36px] flex items-center justify-center flex-shrink-0">
+                      <UserCheck className="h-4 w-4 text-primary" />
                     </div>
                     <div className="flex flex-col">
                       <span className="text-xs font-medium text-muted-foreground">
                         Class Master For
                       </span>
-                      <span className="text-sm">
+                      <span className="text-sm font-semibold text-primary">
                         {stats.className}
                       </span>
                     </div>

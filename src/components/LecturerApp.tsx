@@ -6,6 +6,8 @@ import { LoadingOverlay } from "@/components/ui/loading";
 import Dashboard from "@/pages/LecturerDashboard";
 import Marks from "@/pages/Marks";
 import MyCourses from "@/pages/MyCourses";
+import ReportCards from "@/pages/ReportCards";
+import Analytics from "@/pages/Analytics";
 import Notifications from "@/pages/Notifications";
 import NotFound from "@/pages/NotFound";
 import { NoCourseAssigned } from "@/components/Lecturer/NoCourseAssigned";
@@ -82,6 +84,30 @@ export const LecturerApp = () => {
             <LecturerLayout>
               <Suspense fallback={<LoadingOverlay message="Loading courses..." size="xl" />}>
                 <MyCourses />
+              </Suspense>
+            </LecturerLayout>
+          </ProtectedLecturerRoute>
+        }
+      />
+      <Route
+        path="/report-cards"
+        element={
+          <ProtectedLecturerRoute>
+            <LecturerLayout>
+              <Suspense fallback={<LoadingOverlay message="Loading report cards..." size="xl" />}>
+                <ReportCards />
+              </Suspense>
+            </LecturerLayout>
+          </ProtectedLecturerRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedLecturerRoute>
+            <LecturerLayout>
+              <Suspense fallback={<LoadingOverlay message="Loading analytics..." size="xl" />}>
+                <Analytics />
               </Suspense>
             </LecturerLayout>
           </ProtectedLecturerRoute>

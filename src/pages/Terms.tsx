@@ -24,7 +24,6 @@ interface Term {
   start_date: string;
   end_date: string;
   is_active: boolean;
-  academic_year_id?: string;
 }
 
 const Terms = () => {
@@ -37,29 +36,7 @@ const Terms = () => {
     start_date: "",
     end_date: "",
     is_active: false,
-    academic_year_id: "",
   });
-  const [academicYears, setAcademicYears] = useState<any[]>([]);
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
-
-  useEffect(() => {
-    // Fetch academic years for selection
-    const fetchAcademicYears = async () => {
-      const { data, error } = await supabase
-        .from("academic_years")
-        .select("id, label, start_date, end_date")
-        .order("start_date", { ascending: false });
-      if (!error) setAcademicYears(data || []);
-    };
-    fetchAcademicYears();
-  }, []);
-
-  useEffect(() => {
-    if (!editingTerm && academicYears.length > 0) {
-      setSelectedAcademicYear(academicYears[0].id);
-      setFormData((fd) => ({ ...fd, academic_year_id: academicYears[0].id }));
-    }
-  }, [academicYears, editingTerm]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -112,7 +89,6 @@ const Terms = () => {
         start_date: "",
         end_date: "",
         is_active: false,
-        academic_year_id: selectedAcademicYear || "",
       });
       setEditingTerm(null);
       fetchTerms();
@@ -151,13 +127,11 @@ const Terms = () => {
 
   const openEditDialog = (term: Term) => {
     setEditingTerm(term);
-    setSelectedAcademicYear(term.academic_year_id || "");
     setFormData({
       label: term.label,
       start_date: term.start_date,
       end_date: term.end_date,
       is_active: term.is_active,
-      academic_year_id: term.academic_year_id || "",
     });
     setDialogOpen(true);
   };
@@ -245,40 +219,11 @@ const Terms = () => {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="academic_year">Academic Year</Label>
-                <Select
-                  value={selectedAcademicYear}
-                  onValueChange={(value) => {
-                    setSelectedAcademicYear(value);
-                    setFormData((fd) => ({ ...fd, academic_year_id: value }));
-                    // Optionally reset dates if out of new range
-                  }}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select academic year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {academicYears.map((year) => (
-                      <SelectItem key={year.id} value={year.id}>
-                        {year.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
                 <Label htmlFor="start_date">Start Date</Label>
                 <Input
                   id="start_date"
                   type="date"
                   value={formData.start_date}
-                  min={
-                    academicYears.find((y) => y.id === selectedAcademicYear)?.start_date || undefined
-                  }
-                  max={
-                    academicYears.find((y) => y.id === selectedAcademicYear)?.end_date || undefined
-                  }
                   onChange={(e) =>
                     setFormData({ ...formData, start_date: e.target.value })
                   }
@@ -291,12 +236,6 @@ const Terms = () => {
                   id="end_date"
                   type="date"
                   value={formData.end_date}
-                  min={
-                    academicYears.find((y) => y.id === selectedAcademicYear)?.start_date || undefined
-                  }
-                  max={
-                    academicYears.find((y) => y.id === selectedAcademicYear)?.end_date || undefined
-                  }
                   onChange={(e) =>
                     setFormData({ ...formData, end_date: e.target.value })
                   }
