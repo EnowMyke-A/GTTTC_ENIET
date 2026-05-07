@@ -43,6 +43,24 @@ CREATE TABLE public.course_departments (
   CONSTRAINT course_departments_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id),
   CONSTRAINT course_departments_department_id_fkey FOREIGN KEY (department_id) REFERENCES public.departments(id)
 );
+CREATE TABLE public.course_progress (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  lecturer_id uuid NOT NULL,
+  course_id uuid NOT NULL,
+  term_id uuid NOT NULL,
+  academic_year_id uuid NOT NULL,
+  topics_planned integer,
+  topics_taught integer,
+  periods_planned integer,
+  periods_taught integer,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT course_progress_pkey PRIMARY KEY (id),
+  CONSTRAINT course_progress_lecturer_id_fkey FOREIGN KEY (lecturer_id) REFERENCES public.lecturers(id),
+  CONSTRAINT course_progress_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id),
+  CONSTRAINT course_progress_term_id_fkey FOREIGN KEY (term_id) REFERENCES public.terms(id),
+  CONSTRAINT course_progress_academic_year_id_fkey FOREIGN KEY (academic_year_id) REFERENCES public.academic_years(id)
+);
 CREATE TABLE public.courses (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,

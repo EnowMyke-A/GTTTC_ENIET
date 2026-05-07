@@ -89,7 +89,6 @@ const Sidebar = ({ className }: SidebarProps) => {
 
   // Add class master specific items if applicable
   const classMasterNavItems = [
-    { icon: FileText, label: "Report Cards", path: "/report-cards" },
     { icon: TrendingUp, label: "Statistics", path: "/analytics" },
   ];
 

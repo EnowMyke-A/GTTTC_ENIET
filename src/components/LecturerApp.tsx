@@ -7,7 +7,6 @@ import Dashboard from "@/pages/LecturerDashboard";
 import Marks from "@/pages/Marks";
 import MyCourses from "@/pages/MyCourses";
 import CourseProgress from "@/pages/CourseProgress";
-import ReportCards from "@/pages/ReportCards";
 import Analytics from "@/pages/Analytics";
 import Notifications from "@/pages/Notifications";
 import NotFound from "@/pages/NotFound";
@@ -97,18 +96,6 @@ export const LecturerApp = () => {
             <LecturerLayout>
               <Suspense fallback={<LoadingOverlay message="Loading progress..." size="xl" />}>
                 <CourseProgress />
-              </Suspense>
-            </LecturerLayout>
-          </ProtectedLecturerRoute>
-        }
-      />
-      <Route
-        path="/report-cards"
-        element={
-          <ProtectedLecturerRoute>
-            <LecturerLayout>
-              <Suspense fallback={<LoadingOverlay message="Loading report cards..." size="xl" />}>
-                <ReportCards />
               </Suspense>
             </LecturerLayout>
           </ProtectedLecturerRoute>

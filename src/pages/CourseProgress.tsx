@@ -190,6 +190,22 @@ const CourseProgress = () => {
       if (error) throw error;
 
       const progressMap = new Map<string, ProgressData>();
+
+      // Pre-populate map for all assigned courses with empty defaults
+      courses.forEach((course) => {
+        progressMap.set(course.id, {
+          course_id: course.id,
+          term_id: selectedTerm,
+          academic_year_id: selectedAcademicYear,
+          lecturer_id: lecturerId,
+          topics_planned: null,
+          topics_taught: null,
+          periods_planned: null,
+          periods_taught: null,
+        });
+      });
+
+      // Override with existing DB records
       data?.forEach((item: any) => {
         progressMap.set(item.course_id, item);
       });
@@ -241,12 +257,31 @@ const CourseProgress = () => {
     taught: number | null,
     planned: number | null
   ): string => {
-    if (!taught || !planned || planned === 0) return "0";
+    if (planned === null || planned === undefined || planned === 0) return "0";
+    if (taught === null || taught === undefined) return "0";
     return ((taught / planned) * 100).toFixed(1);
   };
 
   const handleSaveAll = async () => {
-    if (!lecturerId || progressData.size === 0) {
+    if (!lecturerId || !selectedAcademicYear || !selectedTerm) {
+      toast({
+        variant: "destructive",
+        title: "Missing Context",
+        description: "Academic year or term is not set",
+      });
+      return;
+    }
+
+    const allItems = Array.from(progressData.values());
+    const hasAnyData = allItems.some(
+      (item) =>
+        item.topics_planned !== null ||
+        item.topics_taught !== null ||
+        item.periods_planned !== null ||
+        item.periods_taught !== null
+    );
+
+    if (!hasAnyData) {
       toast({
         variant: "destructive",
         title: "No Data",
@@ -258,25 +293,51 @@ const CourseProgress = () => {
     try {
       setSaving(true);
 
-      const dataToSave = Array.from(progressData.values()).map((item) => ({
-        id: item.id,
-        course_id: item.course_id,
-        term_id: selectedTerm,
-        academic_year_id: selectedAcademicYear,
-        lecturer_id: lecturerId,
-        topics_planned: item.topics_planned,
-        topics_taught: item.topics_taught,
-        periods_planned: item.periods_planned,
-        periods_taught: item.periods_taught,
-      }));
+      // New records (no id): only save if at least one field has a value
+      const itemsToInsert = allItems
+        .filter(
+          (item) =>
+            !item.id &&
+            (item.topics_planned !== null ||
+              item.topics_taught !== null ||
+              item.periods_planned !== null ||
+              item.periods_taught !== null)
+        )
+        .map(({ id: _id, ...rest }) => ({
+          ...rest,
+          term_id: selectedTerm,
+          academic_year_id: selectedAcademicYear,
+          lecturer_id: lecturerId,
+        }));
 
-      const { error } = await supabase
-        .from("course_progress")
-        .upsert(dataToSave, {
-          onConflict: "lecturer_id,course_id,term_id,academic_year_id",
-        });
+      // Existing records (have id): always save to allow updates
+      const itemsToUpdate = allItems
+        .filter((item) => !!item.id)
+        .map((item) => ({
+          id: item.id,
+          course_id: item.course_id,
+          term_id: selectedTerm,
+          academic_year_id: selectedAcademicYear,
+          lecturer_id: lecturerId,
+          topics_planned: item.topics_planned,
+          topics_taught: item.topics_taught,
+          periods_planned: item.periods_planned,
+          periods_taught: item.periods_taught,
+        }));
 
-      if (error) throw error;
+      if (itemsToInsert.length > 0) {
+        const { error } = await supabase
+          .from("course_progress")
+          .insert(itemsToInsert);
+        if (error) throw error;
+      }
+
+      if (itemsToUpdate.length > 0) {
+        const { error } = await supabase
+          .from("course_progress")
+          .upsert(itemsToUpdate, { onConflict: "id" });
+        if (error) throw error;
+      }
 
       toast({
         title: "Success",
@@ -453,19 +514,19 @@ const CourseProgress = () => {
                     {courses.map((course) => {
                       const data = progressData.get(course.id);
                       const topicsPercentage = calculatePercentage(
-                        data?.topics_taught || null,
-                        data?.topics_planned || null
+                        data?.topics_taught ?? null,
+                        data?.topics_planned ?? null
                       );
                       const periodsPercentage = calculatePercentage(
-                        data?.periods_taught || null,
-                        data?.periods_planned || null
+                        data?.periods_taught ?? null,
+                        data?.periods_planned ?? null
                       );
 
                       return (
                         <TableRow key={course.id}>
-                          <TableCell className="font-medium w-[20%]">
+                          <TableCell className="font-medium w-[25%]">
                             <div className="flex">
-                              <p className="text-sm text-muted-foreground/85">
+                              <p className="text-xs text-muted-foreground/85">
                                 {course.name}
                               </p>
                               <div className="flex items-center gap-2 text-xs text-muted-foreground/85">

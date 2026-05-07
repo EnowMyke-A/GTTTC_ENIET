@@ -373,6 +373,20 @@ const Analytics = () => {
       // Fetch course progress data from course_progress table
       let progressDataMap = new Map();
       try {
+        // Resolve the actual term UUIDs to query (annual is synthetic, not a real DB id)
+        let progressTermIds: string[] = [];
+        if (termLabel.toLowerCase() === "annual") {
+          const { data: realTerms } = await supabase
+            .from("terms")
+            .select("id")
+            .in("label", ["First", "Second", "Third"]);
+          progressTermIds = realTerms?.map((t: any) => t.id) || [];
+        } else {
+          progressTermIds = [selectedTerm];
+        }
+
+        console.log("[CourseProgress] Querying with academicYearId:", selectedAcademicYear, "| termIds:", progressTermIds);
+
         const { data: progressData, error: progressError } = await supabase
           .from("course_progress")
           .select(
@@ -382,43 +396,38 @@ const Analytics = () => {
           `
           )
           .eq("academic_year_id", selectedAcademicYear)
-          .eq("term_id", selectedTerm);
+          .in("term_id", progressTermIds);
+
+        console.log("[CourseProgress] Raw rows returned:", progressData, "| Error:", progressError);
 
         if (!progressError && progressData) {
           progressData.forEach((progress: any) => {
             const courseName = progress.courses?.name;
             if (courseName) {
-              // Calculate percentages
-              const topicsPercentage =
-                progress.topics_planned && progress.topics_taught
-                  ? (
-                      (progress.topics_taught / progress.topics_planned) *
-                      100
-                    ).toFixed(1)
-                  : "0";
-              const periodsPercentage =
-                progress.periods_planned && progress.periods_taught
-                  ? (
-                      (progress.periods_taught / progress.periods_planned) *
-                      100
-                    ).toFixed(1)
-                  : "0";
-
-              progressDataMap.set(courseName, {
-                topics: {
-                  planned: progress.topics_planned?.toString() || "",
-                  taught: progress.topics_taught?.toString() || "",
-                  percentage: topicsPercentage,
-                },
-                periods: {
-                  planned: progress.periods_planned?.toString() || "",
-                  taught: progress.periods_taught?.toString() || "",
-                  percentage: periodsPercentage,
-                },
-              });
+              if (progressDataMap.has(courseName)) {
+                // Aggregate raw counts for courses with the same name across levels
+                const existing = progressDataMap.get(courseName);
+                existing.topics_planned =
+                  (existing.topics_planned || 0) + (progress.topics_planned || 0);
+                existing.topics_taught =
+                  (existing.topics_taught || 0) + (progress.topics_taught || 0);
+                existing.periods_planned =
+                  (existing.periods_planned || 0) + (progress.periods_planned || 0);
+                existing.periods_taught =
+                  (existing.periods_taught || 0) + (progress.periods_taught || 0);
+              } else {
+                progressDataMap.set(courseName, {
+                  topics_planned: progress.topics_planned || 0,
+                  topics_taught: progress.topics_taught || 0,
+                  periods_planned: progress.periods_planned || 0,
+                  periods_taught: progress.periods_taught || 0,
+                });
+              }
             }
           });
         }
+
+        console.log("[CourseProgress] Aggregated progressDataMap:", Object.fromEntries(progressDataMap));
       } catch (progressError) {
         console.error("Error fetching course progress:", progressError);
         // Continue without progress data if there's an error
@@ -455,11 +464,45 @@ const Analytics = () => {
           existing.totalEnrollmentSum += stat.enrollment?.total || 0;
         } else {
           // Create new subject entry
-          // Get progress data for this course if available
-          const courseProgress = progressDataMap.get(subjectName) || {
-            topics: { planned: "", taught: "", percentage: "" },
-            periods: { planned: "", taught: "", percentage: "" },
-          };
+          // Get aggregated progress data for this course if available
+          const rawProgress = progressDataMap.get(subjectName);
+          const courseProgress = rawProgress
+            ? {
+                topics: {
+                  planned: rawProgress.topics_planned > 0
+                    ? rawProgress.topics_planned.toString()
+                    : "",
+                  taught: rawProgress.topics_taught > 0
+                    ? rawProgress.topics_taught.toString()
+                    : "",
+                  percentage:
+                    rawProgress.topics_planned > 0
+                      ? ((
+                          rawProgress.topics_taught /
+                          rawProgress.topics_planned
+                        ) * 100).toFixed(1)
+                      : "0",
+                },
+                periods: {
+                  planned: rawProgress.periods_planned > 0
+                    ? rawProgress.periods_planned.toString()
+                    : "",
+                  taught: rawProgress.periods_taught > 0
+                    ? rawProgress.periods_taught.toString()
+                    : "",
+                  percentage:
+                    rawProgress.periods_planned > 0
+                      ? ((
+                          rawProgress.periods_taught /
+                          rawProgress.periods_planned
+                        ) * 100).toFixed(1)
+                      : "0",
+                },
+              }
+            : {
+                topics: { planned: "", taught: "", percentage: "" },
+                periods: { planned: "", taught: "", percentage: "" },
+              };
 
           subjectMap.set(subjectName, {
             subject: subjectName,

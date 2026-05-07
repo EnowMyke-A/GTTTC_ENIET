@@ -167,34 +167,103 @@ const LecturerDashboard = () => {
           // For each course, get enrolled students
           for (const courseId of courseIds) {
             const course = coursesData.find((c) => c.id === courseId);
-            if (!course || !course.department_id || !course.level_id) continue;
+            if (!course || !course.level_id) {
+              console.log(
+                `Skipping course ${courseId}: missing course or level_id`
+              );
+              continue;
+            }
 
-            // Get students in this department
-            const { data: studentsData } = await supabase
-              .from("students")
-              .select("id")
-              .eq("department_id", course.department_id);
+            // Get departments associated with this course
+            const { data: courseDepartmentsData, error: cdError } =
+              await supabase
+                .from("course_departments")
+                .select("department_id")
+                .eq("course_id", courseId);
 
-            if (studentsData && studentsData.length > 0) {
-              const studentIds = studentsData.map((s) => s.id);
+            if (cdError) {
+              console.error(
+                `Error fetching course departments for ${courseId}:`,
+                cdError
+              );
+            }
 
-              // Get enrolled students for this level in current academic year
-              const { data: enrolledStudents } = await supabase
-                .from("class_students")
-                .select("student_id")
-                .eq("academic_year_id", academicYearData.id)
-                .eq("level_id", course.level_id)
-                .in("student_id", studentIds);
+            const courseDepartmentIds =
+              courseDepartmentsData?.map((cd: any) => cd.department_id) || [];
 
-              if (enrolledStudents) {
-                enrolledStudents.forEach((es) =>
-                  uniqueStudentIds.add(es.student_id)
+            console.log(`Course ${courseId} (${course.name}):`, {
+              level_id: course.level_id,
+              courseDepartmentIds,
+              department_id: course.department_id,
+            });
+
+            // Get students enrolled in the same level as the course for the current academic year
+            const { data: classStudentsData, error: csError } = await supabase
+              .from("class_students")
+              .select(
+                `
+                student_id,
+                students!inner (
+                  id,
+                  department_id
+                )
+              `
+              )
+              .eq("academic_year_id", academicYearData.id)
+              .eq("level_id", course.level_id);
+
+            if (csError) {
+              console.error(
+                `Error fetching class students for course ${courseId}:`,
+                csError
+              );
+              continue;
+            }
+
+            console.log(
+              `Found ${classStudentsData?.length || 0} students in level ${
+                course.level_id
+              } for academic year ${academicYearData.id}`
+            );
+
+            if (classStudentsData && classStudentsData.length > 0) {
+              // Filter by course departments if any are specified
+              let eligibleStudents = classStudentsData;
+              if (courseDepartmentIds.length > 0) {
+                eligibleStudents = classStudentsData.filter(
+                  (cs: any) =>
+                    cs.students?.department_id &&
+                    courseDepartmentIds.includes(cs.students.department_id)
+                );
+                console.log(
+                  `After filtering by departments ${courseDepartmentIds.join(
+                    ", "
+                  )}: ${eligibleStudents.length} students`
+                );
+              } else {
+                console.log(
+                  `No department filter applied, including all ${eligibleStudents.length} students`
                 );
               }
+
+              // Add all eligible students to the unique set
+              eligibleStudents.forEach((es: any) => {
+                if (es.student_id) {
+                  uniqueStudentIds.add(es.student_id);
+                }
+              });
             }
           }
 
           totalUniqueStudents = uniqueStudentIds.size;
+          console.log(
+            `Total unique students across all courses: ${totalUniqueStudents}`
+          );
+        } else {
+          console.log("Missing academic year or course IDs:", {
+            hasAcademicYear: !!academicYearData,
+            courseIdsLength: courseIds.length,
+          });
         }
 
         // Calculate marks entered vs expected for active academic year and term
@@ -223,7 +292,6 @@ const LecturerDashboard = () => {
         // Get class master info
         let className = null;
         let isClassMaster = false;
-        let classMasterStudentsCount = 0;
 
         const lecturerInfo = lecturerData as any;
 
@@ -253,34 +321,11 @@ const LecturerDashboard = () => {
               deptResult.data.abbreviation || deptResult.data.name;
             className = `${deptAbbr}${levelResult.data.name}`;
           }
-
-          // Count class master students
-          if (academicYearData) {
-            const { data: studentsData } = await supabase
-              .from("students")
-              .select("id")
-              .eq("department_id", lecturerInfo.department_id);
-
-            if (studentsData && studentsData.length > 0) {
-              const studentIds = studentsData.map((s) => s.id);
-
-              const { count: studentsCount } = await supabase
-                .from("class_students")
-                .select("*", { count: "exact", head: true })
-                .eq("academic_year_id", academicYearData.id)
-                .eq("level_id", lecturerInfo.level_id)
-                .in("student_id", studentIds);
-
-              classMasterStudentsCount = studentsCount || 0;
-            }
-          }
         }
 
         setStats({
           assignedCourses: courseIds.length,
-          totalStudents: isClassMaster
-            ? classMasterStudentsCount
-            : totalUniqueStudents,
+          totalStudents: totalUniqueStudents,
           marksEntered,
           totalMarksExpected,
           isClassMaster,
@@ -390,9 +435,7 @@ const LecturerDashboard = () => {
       icon: Users,
       description:
         stats.assignedCourses > 0
-          ? stats.isClassMaster
-            ? "In your class (current year)"
-            : "Taking your courses (current year)"
+          ? "Enrolled in your courses (current year)"
           : "No courses assigned",
       color: "text-green-600",
       isText: false,
