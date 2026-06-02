@@ -10,6 +10,13 @@ CREATE TABLE public.academic_years (
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT academic_years_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.class_council (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  academic_year_id uuid NOT NULL,
+  threshold_value numeric NOT NULL CHECK (threshold_value >= 5::numeric AND threshold_value <= 15::numeric),
+  CONSTRAINT class_council_pkey PRIMARY KEY (id),
+  CONSTRAINT class_council_academic_year_id_fkey FOREIGN KEY (academic_year_id) REFERENCES public.academic_years(id)
+);
 CREATE TABLE public.class_students (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   academic_year_id uuid,
