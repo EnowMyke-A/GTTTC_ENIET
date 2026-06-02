@@ -502,7 +502,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
               Ministry of Secondary Education
             </h2>
             <h2 style={{ textTransform: "uppercase", fontSize: `${data.subjects?.length>20?11:12}px` }}>
-              Government Technical Teacher Training College (G.T.T.T.C) Kumba
+              Government Specialised Technical Teacher Training College (G.S.T.T.T.C) Kumba
             </h2>
           </div>
 
@@ -536,8 +536,8 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
               Ministère des Enseignements Secondaires
             </h2>
             <h2 style={{ textTransform: "uppercase", fontSize: `${data.subjects?.length>20?11:12}px` }}>
-              ECOLE NORMALE D'INSTITUTEURS DE L'ENSEIGNEMENT TECHNIQUE
-              (E.N.I.E.T) DE KUMBA
+              ECOLE NORMALE SPECIALISE D'INSTITUTEURS DE L'ENSEIGNEMENT TECHNIQUE
+              (E.N.S.I.E.T) DE KUMBA
             </h2>
           </div>
         </div>
