@@ -40,7 +40,13 @@ serve(async (req) => {
       )
     }
 
-    const threshold = Number(academicYear.threshold_value)
+    const threshold = Number(academicYear.threshold_value ?? 12)
+    console.log("[calculate-annual-averages] Fetched academic year threshold:", {
+      academic_year_id,
+      threshold_value_raw: academicYear.threshold_value,
+      threshold_value_type: typeof academicYear.threshold_value,
+      threshold,
+    });
 
     // Build query for students
     // ── UPDATED: also pull department_id and department name from students ──

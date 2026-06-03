@@ -1151,33 +1151,43 @@ const ReportCards = () => {
     return "F";
   };
 
-  // Fetch annual pass rates from calculate-annual-averages edge function
-  // Returns a lookup: "<department_abbreviation>|<level>" → percentage
-  const fetchAnnualPassRates = async (): Promise<Record<string, number>> => {
+  // Fetch annual pass rates and promotion threshold from calculate-annual-averages edge function
+  const fetchAnnualPassRates = async (): Promise<{
+    lookup: Record<string, number>;
+    threshold: number | null;
+  }> => {
     try {
       const { data: annualData, error } = await supabase.functions.invoke(
         "calculate-annual-averages",
         { body: { academic_year_id: selectedAcademicYear } }
       );
-      if (error || !annualData?.success) return {};
+      if (error || !annualData?.success) return { lookup: {}, threshold: null };
 
       const lookup: Record<string, number> = {};
       for (const s of annualData.students || []) {
         const key = `${s.department_abbreviation ?? ""}|${s.current_level}`;
         lookup[key] = s.annual_num_passed ?? 0;
       }
-      return lookup;
+
+      const threshold = annualData.promotion_threshold ?? null;
+      return { lookup, threshold };
     } catch {
-      return {};
+      return { lookup: {}, threshold: null };
     }
   };
 
-  // Inject annual_num_passed from lookup into a report card's class_profile
-  const injectAnnualPassRate = (card: any, lookup: Record<string, number>) => {
+  // Inject annual_num_passed and promotion_threshold into a report card
+  const injectAnnualPassRate = (
+    card: any,
+    data: { lookup: Record<string, number>; threshold: number | null }
+  ) => {
     const key = `${card.department ?? ""}|${card.level ?? ""}`;
-    if (lookup[key] != null) {
+    if (data.lookup[key] != null) {
       if (!card.class_profile) card.class_profile = {};
-      card.class_profile.annual_num_passed = lookup[key];
+      card.class_profile.annual_num_passed = data.lookup[key];
+    }
+    if (card.promotion_threshold == null && data.threshold != null) {
+      card.promotion_threshold = data.threshold;
     }
   };
 

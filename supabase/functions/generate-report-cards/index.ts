@@ -96,6 +96,12 @@ serve(async (req) => {
     }
 
     const promotionThreshold = Number(academicYear?.threshold_value ?? 12);
+    console.log("[generate-report-cards] Fetched academic year threshold:", {
+      academicYearId,
+      threshold_value_raw: academicYear?.threshold_value,
+      threshold_value_type: typeof academicYear?.threshold_value,
+      promotionThreshold,
+    });
 
     const { data: term, error: termError } = await supabaseClient
       .from("terms")
