@@ -86,6 +86,15 @@ const Council = () => {
   }, [userRole]);
 
   useEffect(() => {
+    if (selectedAcademicYear) {
+      const year = academicYears.find((y) => y.id === selectedAcademicYear);
+      if (year?.threshold_value != null) {
+        setThreshold(String(year.threshold_value));
+      }
+    }
+  }, [selectedAcademicYear, academicYears]);
+
+  useEffect(() => {
     if (selectedAcademicYear && selectedDepartment && selectedLevel) {
       fetchStudents();
     } else {
@@ -212,17 +221,36 @@ const Council = () => {
         averagesResults.map((r) => [r.studentId, r.average])
       );
 
+      // Get threshold from academic year for auto-promotion
+      const yearRecord = academicYears.find(
+        (y) => y.id === selectedAcademicYear
+      );
+      const thresholdValue = parseFloat(
+        yearRecord?.threshold_value ?? threshold
+      );
+
       // Transform data
       const transformedStudents: StudentRecord[] = classStudentsData.map(
-        (cs: any) => ({
-          id: cs.id,
-          student_id: cs.student_id,
-          student_name: cs.students.name,
-          student_matricule: cs.students.matricule,
-          average: averagesMap.get(cs.student_id) || 0,
-          promotion_status: cs.promotion_status || "pending",
-          original_status: cs.promotion_status || "pending",
-        })
+        (cs: any) => {
+          const avg = averagesMap.get(cs.student_id) || 0;
+          const currentStatus = cs.promotion_status || "pending";
+
+          // Auto-promote pending students above threshold
+          let status = currentStatus;
+          if (currentStatus === "pending") {
+            status = avg >= thresholdValue ? "promoted" : "repeated";
+          }
+
+          return {
+            id: cs.id,
+            student_id: cs.student_id,
+            student_name: cs.students.name,
+            student_matricule: cs.students.matricule,
+            average: avg,
+            promotion_status: status,
+            original_status: currentStatus,
+          };
+        }
       );
 
       // Sort by average descending
@@ -257,33 +285,92 @@ const Council = () => {
         return;
       }
 
-      // Apply threshold to determine promotion status
-      const updatedStudents = students.map((student) => ({
-        ...student,
-        promotion_status:
-          student.average >= thresholdValue ? "promoted" : "repeated",
-      }));
+      // Persist threshold to academic_years first
+      const { error: thresholdError } = await supabase
+        .from("academic_years")
+        .update({ threshold_value: thresholdValue })
+        .eq("id", selectedAcademicYear);
 
-      // Prepare updates for database
-      const updates = updatedStudents
-        .filter((s) => s.promotion_status !== s.original_status)
-        .map((s) => ({
-          id: s.id,
-          promotion_status: s.promotion_status,
-          promoted: s.promotion_status === "promoted",
-        }));
+      if (thresholdError) throw thresholdError;
 
-      if (updates.length === 0) {
+      // Get all terms
+      const { data: termsData } = await supabase
+        .from("terms")
+        .select("id")
+        .order("label");
+
+      if (!termsData || termsData.length === 0) {
         toast({
-          title: "No Changes",
-          description:
-            "All students already have the correct status based on threshold",
+          variant: "destructive",
+          title: "Error",
+          description: "No terms found",
         });
         setProcessing(false);
         return;
       }
 
-      // Save to database
+      // Fetch ALL class_students for the entire academic year
+      const { data: allClassStudents, error: csError } = await supabase
+        .from("class_students")
+        .select("id, student_id, promotion_status")
+        .eq("academic_year_id", selectedAcademicYear);
+
+      if (csError) throw csError;
+
+      if (!allClassStudents || allClassStudents.length === 0) {
+        toast({
+          title: "Success",
+          description: `Threshold updated to ${thresholdValue}. No students enrolled in this academic year.`,
+        });
+        setProcessing(false);
+        return;
+      }
+
+      // Compute annual averages for all students
+      const studentIds = [
+        ...new Set(allClassStudents.map((cs: any) => cs.student_id)),
+      ];
+      const averagesPromises = studentIds.map(async (studentId: string) => {
+        const { data, error } = await supabase.functions.invoke(
+          "get-student-average",
+          {
+            body: {
+              studentId,
+              termId: termsData[termsData.length - 1].id,
+              academicYearId: selectedAcademicYear,
+              calculateAnnual: true,
+            },
+          }
+        );
+
+        if (error) {
+          console.error(`Error getting average for ${studentId}:`, error);
+          return { studentId, average: 0 };
+        }
+
+        return { studentId, average: data?.average || 0 };
+      });
+
+      const averagesResults = await Promise.all(averagesPromises);
+      const averagesMap = new Map(
+        averagesResults.map((r) => [r.studentId, r.average])
+      );
+
+      // Apply threshold to ALL students
+      const updates: { id: string; promotion_status: string; promoted: boolean }[] = [];
+      for (const cs of allClassStudents) {
+        const avg = averagesMap.get(cs.student_id) || 0;
+        const newStatus = avg >= thresholdValue ? "promoted" : "repeated";
+        if (newStatus !== cs.promotion_status) {
+          updates.push({
+            id: cs.id,
+            promotion_status: newStatus,
+            promoted: newStatus === "promoted",
+          });
+        }
+      }
+
+      // Save all changes
       for (const update of updates) {
         const { error } = await supabase
           .from("class_students")
@@ -298,10 +385,10 @@ const Council = () => {
 
       toast({
         title: "Success",
-        description: `Applied threshold and saved decisions for ${updates.length} student(s)`,
+        description: `Threshold updated to ${thresholdValue}. ${updates.length} student(s) updated across all departments and levels.`,
       });
 
-      // Refresh students to update original_status
+      // Refresh current view
       await fetchStudents();
     } catch (error: any) {
       toast({
@@ -517,7 +604,7 @@ const Council = () => {
           {students.length > 0 && (
             <div className="flex flex-col sm:flex-row gap-4 items-end pt-6 border-t">
               <div className="flex flex-col gap-4 flex-1">
-                <Label>Promotion Threshold (Average)</Label>
+                <Label>Promotion Threshold (from Academic Year)</Label>
                 <div className="flex gap-3 flex-wrap">
                   <Input
                     type="number"
@@ -565,7 +652,7 @@ const Council = () => {
                 <p className="text-xs text-muted-foreground/85 mt-1">
                   {stats.modified > 0
                     ? "Manual changes detected. Click 'Save Changes' to save, or 'Apply & Save' to reset with threshold."
-                    : `Click 'Apply & Save' to apply threshold (≥ ${threshold} = promoted) and save decisions`}
+                    : `Students with average ≥ ${threshold} are auto-promoted. Click 'Apply & Save' to persist decisions.`}
                 </p>
               </div>
             </div>

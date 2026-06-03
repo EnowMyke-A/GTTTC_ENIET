@@ -10,6 +10,7 @@ interface ReportCardTemplateProps {
     level: ReactNode;
     term: ReactNode;
     academic_year: string;
+    promotion_threshold?: number;
     student_name: string;
     dob: string;
     class: string;
@@ -474,13 +475,17 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
   function getAcademicPerformanceRemark(data: any): string {
     // Extract term number from data.term (e.g., "First", "Second", "Third")
     const termName = data.term?.toString().toLowerCase();
+    const threshold = data.promotion_threshold ?? 12;
     
     if (termName?.includes("first") || termName?.includes("second")) {
       // For Term 1 and 2: Check term_average
       return data.performance?.term_average >= 12 ? "PASSED" : "FAILED";
     } else if (termName?.includes("third")) {
-      // For Term 3: Check annual_average
-      return data.performance?.annual_average >= 12 ? "PROMOTED" : "FAILED";
+      // For Term 3: Check annual_average against dynamic threshold
+      const annualAvg = data.class_profile?.annual_average ?? 0;
+      if (annualAvg >= threshold) return "PROMOTED";
+      if (annualAvg >= 10) return "FAILED";
+      return "REPEAT";
     } else {
       // Fallback for unknown terms
       return data.performance?.term_average >= 12 ? "PASSED" : "FAILED";
@@ -1139,9 +1144,9 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
                     </tr>
                     <tr>
                       <th style={{ textAlign: "left", borderLeft: "none" }}>
-                        Annual Passed
+                        Annual Pass Rate
                       </th>
-                      <td>{data.class_profile.annual_num_passed}</td>
+                      <td>{data.term?.toString().toLowerCase().includes("third") ? `${data.class_profile.annual_num_passed}%` : "0"}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1165,7 +1170,7 @@ const ReportCardTemplate: React.FC<ReportCardTemplateProps> = ({ data }) => {
           >
             <tr>
               {/* Remark Column */}
-              <td style={{ padding: `${(20 - data.subjects?.length)*6 + 10}px`, width: "25%", fontWeight: "bold", fontSize: `${data.subjects?.length>18?12:14}px`, textAlign: "center" , verticalAlign: "center", color:`${getAcademicPerformanceRemark(data)=="FAILED"?"#FF0000":"#0D1C12D9"}`}}>
+              <td style={{ padding: `${(20 - data.subjects?.length)*6 + 10}px`, width: "25%", fontWeight: "bold", fontSize: `${data.subjects?.length>18?12:14}px`, textAlign: "center" , verticalAlign: "center", color:`${getAcademicPerformanceRemark(data)==="FAILED" || getAcademicPerformanceRemark(data)==="REPEAT" ?"#FF0000":"#0D1C12D9"}`}}>
                 {getAcademicPerformanceRemark(data)}
               </td>
 

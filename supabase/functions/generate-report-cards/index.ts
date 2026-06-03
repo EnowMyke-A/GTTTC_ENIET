@@ -86,7 +86,7 @@ serve(async (req) => {
     console.log("Fetching academic year and term details...");
     const { data: academicYear, error: academicYearError } = await supabaseClient
       .from("academic_years")
-      .select("id, label")
+      .select("id, label, threshold_value")
       .eq("id", academicYearId)
       .single();
 
@@ -94,6 +94,8 @@ serve(async (req) => {
       console.error("Error fetching academic year:", academicYearError);
       throw academicYearError;
     }
+
+    const promotionThreshold = Number(academicYear?.threshold_value ?? 12);
 
     const { data: term, error: termError } = await supabaseClient
       .from("terms")
@@ -320,7 +322,8 @@ serve(async (req) => {
         // Assemble report card data matching template structure
         const reportCard = {
           academic_year: academicYear?.label || "N/A",
-          term: term?.label || "N/A", 
+          term: term?.label || "N/A",
+          promotion_threshold: promotionThreshold, 
           student_name: student.name,
           dob: student.dob || "N/A",
           pob: student.pob || "N/A",
@@ -435,12 +438,40 @@ serve(async (req) => {
         
         console.log(`Student average: ${studentAverage}, Class averages: ${JSON.stringify(sortedAverages)}, Calculated rank: ${studentRank}`);
 
+        // Compute class-level annual averages for annual_num_passed
+        let annualClassPassed = 0;
+        if (term && term.label.toLowerCase().includes("third")) {
+          for (const classStudent of classStudents || []) {
+            const { data: yearMarks } = await supabaseClient
+              .from("marks")
+              .select("ca_score, exam_score, courses!inner(coefficient), terms!inner(label)")
+              .eq("student_id", classStudent.id)
+              .eq("academic_year_id", academicYearId);
+
+            if (yearMarks && yearMarks.length > 0) {
+              const tGroups: Record<string, { total: number; coef: number }> = {};
+              for (const m of yearMarks) {
+                const avg = ((m.ca_score || 0) + (m.exam_score || 0)) / 2;
+                const w = avg * (m.courses.coefficient || 1);
+                const tl = m.terms.label;
+                if (!tGroups[tl]) tGroups[tl] = { total: 0, coef: 0 };
+                tGroups[tl].total += w;
+                tGroups[tl].coef += m.courses.coefficient || 1;
+              }
+              const tAvgs = Object.values(tGroups).map((g) => g.coef > 0 ? g.total / g.coef : 0);
+              const annAvg = tAvgs.length ? tAvgs.reduce((a, b) => a + b, 0) / tAvgs.length : 0;
+              if (annAvg >= 12) annualClassPassed++;
+            }
+          }
+        }
+
         // Update single student card with class statistics
         singleStudentCard.performance.class_postion = studentRank.toString();
         singleStudentCard.class_profile.class_average = Math.round(classAvg * 100) / 100;
         singleStudentCard.class_profile.min_max = `${min.toFixed(2)} - ${max.toFixed(2)}`;
         singleStudentCard.class_profile.num_enrolled = classAverages.length;
         singleStudentCard.class_profile.num_passed = classPassed;
+        singleStudentCard.class_profile.annual_num_passed = annualClassPassed;
       }
 
       console.log(`Generated report card for single student successfully`);
@@ -474,6 +505,11 @@ serve(async (req) => {
       const max = averages.length ? Math.max(...averages) : 0;
       const numPassed = averages.filter((a) => a >= 12).length;
 
+      // Compute class-level annual_num_passed (students with annual avg >= 12)
+      const annualNumPassedClass = reportCards.filter(
+        (c) => (c.class_profile.annual_average || 0) >= 12
+      ).length;
+
       // Update each report card with rankings and class profile
       reportCards.forEach((card, i) => {
         card.performance.class_postion = (i + 1).toString();
@@ -481,6 +517,7 @@ serve(async (req) => {
         card.class_profile.min_max = `${min.toFixed(2)} - ${max.toFixed(2)}`;
         card.class_profile.num_enrolled = reportCards.length;
         card.class_profile.num_passed = numPassed;
+        card.class_profile.annual_num_passed = annualNumPassedClass;
       });
 
       console.log(`Generated ${reportCards.length} report cards successfully`);

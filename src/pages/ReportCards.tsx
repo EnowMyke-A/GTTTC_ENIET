@@ -400,41 +400,12 @@ const ReportCards = () => {
 
       const studentReportCard = reportData.data[0];
 
-      // Transform edge function data to match local interface
-      const transformedData: ReportCardData = {
-        student: {
-          id: selectedStudent,
-          name: studentReportCard.student_name,
-          matricule: studentReportCard.student_id,
-          photo_url: studentReportCard.student_photo_base64,
-          gender: studentReportCard.gender,
-          dob: studentReportCard.dob,
-          departments: {
-            name: studentReportCard.department,
-          },
-        },
-        marks: studentReportCard.subjects.map((subject: any) => ({
-          ca_score: subject.ca_score,
-          exam_score: subject.exam_score,
-          total_score: subject.average,
-          grade: subject.grade,
-          courses: {
-            name: subject.subject,
-            coefficient: subject.coef,
-          },
-        })),
-        classStats: {
-          average: studentReportCard.class_profile.class_average,
-          minMax: studentReportCard.class_profile.min_max,
-          totalPassed: studentReportCard.class_profile.num_passed,
-          classSize: studentReportCard.class_profile.num_enrolled,
-        },
-        termAverage: studentReportCard.performance.term_average,
-        totalScore: studentReportCard.performance.total_weighted_score,
-        coefTotal: studentReportCard.performance.total_coef,
-      };
+      // Inject annual_num_passed from calculate-annual-averages
+      const passRates = await fetchAnnualPassRates();
+      injectAnnualPassRate(studentReportCard, passRates);
 
-      setReportData(transformedData);
+      // Store raw edge function data directly — matches ReportCardTemplate interface
+      setReportData(studentReportCard);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -489,6 +460,10 @@ const ReportCards = () => {
       }
 
       const studentReportCard = reportData.data[0];
+
+      // Inject annual_num_passed from calculate-annual-averages
+      const passRates = await fetchAnnualPassRates();
+      injectAnnualPassRate(studentReportCard, passRates);
 
       // Return the complete data structure directly from edge function
       // This matches the ReportCardTemplate interface exactly
@@ -758,6 +733,12 @@ const ReportCards = () => {
         totalScore: card.performance.total_weighted_score,
         coefTotal: card.performance.total_coef,
       }));
+
+      // Inject annual_num_passed from calculate-annual-averages into each card
+      const passRates = await fetchAnnualPassRates();
+      for (const card of reportData.data) {
+        injectAnnualPassRate(card, passRates);
+      }
 
       // Generate combined PDF using the template data directly
       const printWindow = window.open("", "", "width=900,height=650");
@@ -1168,6 +1149,36 @@ const ReportCards = () => {
     if (average >= 10) return "D";
     if (average >= 8) return "E";
     return "F";
+  };
+
+  // Fetch annual pass rates from calculate-annual-averages edge function
+  // Returns a lookup: "<department_abbreviation>|<level>" → percentage
+  const fetchAnnualPassRates = async (): Promise<Record<string, number>> => {
+    try {
+      const { data: annualData, error } = await supabase.functions.invoke(
+        "calculate-annual-averages",
+        { body: { academic_year_id: selectedAcademicYear } }
+      );
+      if (error || !annualData?.success) return {};
+
+      const lookup: Record<string, number> = {};
+      for (const s of annualData.students || []) {
+        const key = `${s.department_abbreviation ?? ""}|${s.current_level}`;
+        lookup[key] = s.annual_num_passed ?? 0;
+      }
+      return lookup;
+    } catch {
+      return {};
+    }
+  };
+
+  // Inject annual_num_passed from lookup into a report card's class_profile
+  const injectAnnualPassRate = (card: any, lookup: Record<string, number>) => {
+    const key = `${card.department ?? ""}|${card.level ?? ""}`;
+    if (lookup[key] != null) {
+      if (!card.class_profile) card.class_profile = {};
+      card.class_profile.annual_num_passed = lookup[key];
+    }
   };
 
   // Transform data for template - now data comes directly from edge function
